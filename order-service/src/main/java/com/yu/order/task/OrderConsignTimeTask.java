@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@Deprecated
 public class OrderConsignTimeTask {
 
     private final IOrderService orderService;

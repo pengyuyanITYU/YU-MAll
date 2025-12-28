@@ -33,5 +33,7 @@ public interface IOrderService extends IService<Order> {
 
     void updateAllPayOrderStatus();
 
+    void batchConfirmOrders();
+
 
 }

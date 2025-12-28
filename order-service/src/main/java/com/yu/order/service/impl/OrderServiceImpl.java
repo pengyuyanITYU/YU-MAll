@@ -76,7 +76,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @GlobalTransactional(rollbackFor = Exception.class)
     public boolean addOrder(OrderFormDTO orderFormDTO) {
         Long userId = UserContext.getUser();
         if(userId == null){
@@ -113,6 +113,15 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 message.getMessageProperties()
                         .setDelay(60000);
                 message.getMessageProperties().setExpiration("10000");
+                return message;
+            }
+        });
+        rabbitTemplate.convertAndSend("order-service.direct", "order-confirm", message, new MessagePostProcessor() {
+            @Override
+            public Message postProcessMessage(Message message) throws AmqpException {
+                message.getMessageProperties()
+                        .setDelay(60000);
+                        message.getMessageProperties().setExpiration("10000");
                 return message;
             }
         });
@@ -174,6 +183,19 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .eq(Order::getStatus, OrderStatus.PAID)
                 .le(Order::getCreateTime, LocalDateTime.now())
                 .set(Order::getStatus, OrderStatus.SHIPPED)
+                .set(Order::getConsignTime, LocalDateTime.now())
+                .update();
+        if (!update){
+            log.info("订单暂不满足发货条件（可能状态不是PAID或支付未满24小时）");
+        }
+    }
+
+    @Override
+    public void batchConfirmOrders() {
+        boolean update = lambdaUpdate()
+                .eq(Order::getStatus, OrderStatus.SHIPPED)
+                .le(Order::getCreateTime, LocalDateTime.now())
+                .set(Order::getStatus, OrderStatus.SUCCESS)
                 .set(Order::getConsignTime, LocalDateTime.now())
                 .update();
         if (!update){

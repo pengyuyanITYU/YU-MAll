@@ -20,7 +20,7 @@ public enum OrderStatus {
     UNPAID(1, "未付款"),
     PAID(2, "已付款, 未发货"),
     SHIPPED(3, "已发货, 未确认"),
-    SUCCESS(4, "交易成功"),
+    SUCCESS(4, "交易成功,已收货"),
     CANCELED(5, "交易取消"),     // 对应你图里的“交易取消”而不是“交易取消”
     EVALUATED(6, "已评价");
 

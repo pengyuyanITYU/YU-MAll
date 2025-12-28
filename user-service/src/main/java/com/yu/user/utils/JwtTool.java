@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.security.KeyPair;
 import java.time.Duration;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtTool {
@@ -21,7 +22,9 @@ public class JwtTool {
     }
 
     public  String  createToken(Long userId, Duration ttl) {
+
         return JWT.create()
+
                 .setPayload("user", userId)
                 .setExpiresAt(new Date(System.currentTimeMillis() + ttl.toMillis()))
                 .setSigner(jwtSigner)

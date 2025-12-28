@@ -1,6 +1,7 @@
 package com.yu.order.consumer;
 
 
+import com.yu.common.exception.BusinessException;
 import com.yu.order.domain.enums.OrderStatus;
 import com.yu.order.domain.po.Order;
 import com.yu.order.domain.vo.OrderVO;
@@ -37,5 +38,26 @@ public class OrderTimeOutConsumer {
             return;
         }
         orderService.cancelOrder(byOrderId.getId());
+    }
+
+    @RabbitListener(bindings=@QueueBinding(value=@Queue(value="order-confirm.queue",durable = "true"),exchange=@Exchange(value="order-service.direct",delayed = "true"),key="order-confirm"))
+    public void timeOut2(String msg){
+        log.info("订单超时未确认,订单ID:{}", msg);
+        Order order = new Order();
+        order.setId(Long.parseLong(msg));
+        Order byOrderId = orderService.getById(order);
+        if (byOrderId == null){
+            log.error("订单不存在");
+            return;
+        }
+        if(byOrderId.getStatus() != 3 && byOrderId.getStatus() != 4){
+            log.error("订单状态异常");
+            throw new BusinessException("订单状态异常");
+        }
+        if(byOrderId.getStatus() == 4){
+            log.info("订单已确认");
+            return;
+        }
+        orderService.confirmOrder(byOrderId.getId());
     }
 }
