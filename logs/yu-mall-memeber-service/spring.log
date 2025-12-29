@@ -1,0 +1,84 @@
+18:49:10:981  INFO 24036 --- [main] com.yu.member.MemberApplication          : No active profile set, falling back to 1 default profile: "default"
+18:49:11:466  INFO 24036 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+18:49:11:468  INFO 24036 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+18:49:11:483  INFO 24036 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 5 ms. Found 0 Redis repository interfaces.
+18:49:11:647  INFO 24036 --- [main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=3ef07bed-2758-3d5b-86e8-af0c6441d72f
+18:49:11:690  INFO 24036 --- [main] trationDelegate$BeanPostProcessorChecker : Bean 'io.seata.spring.boot.autoconfigure.SeataCoreAutoConfiguration' of type [io.seata.spring.boot.autoconfigure.SeataCoreAutoConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+18:49:11:690  INFO 24036 --- [main] trationDelegate$BeanPostProcessorChecker : Bean 'springApplicationContextProvider' of type [io.seata.spring.boot.autoconfigure.provider.SpringApplicationContextProvider] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+18:49:11:691  INFO 24036 --- [main] trationDelegate$BeanPostProcessorChecker : Bean 'io.seata.spring.boot.autoconfigure.SeataAutoConfiguration' of type [io.seata.spring.boot.autoconfigure.SeataAutoConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+18:49:11:714  INFO 24036 --- [main] trationDelegate$BeanPostProcessorChecker : Bean 'failureHandler' of type [io.seata.tm.api.DefaultFailureHandlerImpl] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+18:49:11:716  INFO 24036 --- [main] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.cloud.commons.config.CommonsConfigAutoConfiguration' of type [org.springframework.cloud.commons.config.CommonsConfigAutoConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+18:49:11:716  INFO 24036 --- [main] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.cloud.client.loadbalancer.LoadBalancerDefaultMappingsProviderAutoConfiguration' of type [org.springframework.cloud.client.loadbalancer.LoadBalancerDefaultMappingsProviderAutoConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+18:49:11:717  INFO 24036 --- [main] trationDelegate$BeanPostProcessorChecker : Bean 'loadBalancerClientsDefaultsMappingsProvider' of type [org.springframework.cloud.client.loadbalancer.LoadBalancerDefaultMappingsProviderAutoConfiguration$$Lambda$582/0x00000008405dc840] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+18:49:11:718  INFO 24036 --- [main] trationDelegate$BeanPostProcessorChecker : Bean 'defaultsBindHandlerAdvisor' of type [org.springframework.cloud.commons.config.DefaultsBindHandlerAdvisor] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+18:49:11:719  INFO 24036 --- [main] trationDelegate$BeanPostProcessorChecker : Bean 'springCloudAlibabaConfiguration' of type [io.seata.spring.boot.autoconfigure.properties.SpringCloudAlibabaConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+18:49:11:720  INFO 24036 --- [main] trationDelegate$BeanPostProcessorChecker : Bean 'seataProperties' of type [io.seata.spring.boot.autoconfigure.properties.SeataProperties] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+18:49:11:721  INFO 24036 --- [main] i.s.s.b.a.SeataAutoConfiguration         : Automatically configure Seata
+18:49:11:751  INFO 24036 --- [main] io.seata.config.ConfigurationFactory     : load Configuration from :Spring Configuration
+18:49:11:754  INFO 24036 --- [main] io.seata.config.ConfigurationFactory     : load Configuration from :Spring Configuration
+18:49:11:785  INFO 24036 --- [main] i.s.s.a.GlobalTransactionScanner         : Initializing Global Transaction Clients ... 
+18:49:11:827  INFO 24036 --- [main] i.s.core.rpc.netty.NettyClientBootstrap  : NettyClientBootstrap has started
+18:49:11:934  INFO 24036 --- [main] com.alibaba.nacos.common.remote.client   : [RpcClientFactory] create a new rpc client of a1c4982c-3536-4eac-986d-69597455afdf
+18:49:11:934  INFO 24036 --- [main] com.alibaba.nacos.common.remote.client   : [a1c4982c-3536-4eac-986d-69597455afdf] RpcClient init label, labels = {module=naming, source=sdk}
+18:49:11:935  INFO 24036 --- [main] com.alibaba.nacos.common.remote.client   : [a1c4982c-3536-4eac-986d-69597455afdf] RpcClient init, ServerListFactory = com.alibaba.nacos.client.naming.core.ServerListManager
+18:49:11:935  INFO 24036 --- [main] com.alibaba.nacos.common.remote.client   : [a1c4982c-3536-4eac-986d-69597455afdf] Registry connection listener to current client:com.alibaba.nacos.client.naming.remote.gprc.redo.NamingGrpcRedoService
+18:49:11:935  INFO 24036 --- [main] com.alibaba.nacos.common.remote.client   : [a1c4982c-3536-4eac-986d-69597455afdf] Register server push request handler:com.alibaba.nacos.client.naming.remote.gprc.NamingPushRequestHandler
+18:49:11:935  INFO 24036 --- [main] com.alibaba.nacos.common.remote.client   : [a1c4982c-3536-4eac-986d-69597455afdf] Try to connect to server on start up, server: {serverIp = '192.168.100.128', server main port = 8848}
+18:49:12:067  INFO 24036 --- [main] com.alibaba.nacos.common.remote.client   : [a1c4982c-3536-4eac-986d-69597455afdf] Success to connect to server [192.168.100.128:8848] on start up, connectionId = 1764758955548_192.168.100.1_51536
+18:49:12:067  INFO 24036 --- [main] com.alibaba.nacos.common.remote.client   : [a1c4982c-3536-4eac-986d-69597455afdf] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$ConnectResetRequestHandler
+18:49:12:067  INFO 24036 --- [com.alibaba.nacos.client.remote.worker] com.alibaba.nacos.common.remote.client   : [a1c4982c-3536-4eac-986d-69597455afdf] Notify connected event to listeners.
+18:49:12:067  INFO 24036 --- [main] com.alibaba.nacos.common.remote.client   : [a1c4982c-3536-4eac-986d-69597455afdf] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$$Lambda$466/0x00000008404b0040
+18:49:12:093  INFO 24036 --- [main] i.s.c.r.netty.NettyClientChannelManager  : will connect to 192.168.100.128:8099
+18:49:12:368  INFO 24036 --- [main] i.s.core.rpc.netty.NettyPoolableFactory  : NettyPool create channel to transactionRole:TMROLE,address:192.168.100.128:8099,msg:< RegisterTMRequest{applicationId='yu-mall-memeber-service', transactionServiceGroup='mall'} >
+18:49:12:594  INFO 24036 --- [nacos-grpc-client-executor-7] com.alibaba.nacos.common.remote.client   : [a1c4982c-3536-4eac-986d-69597455afdf] Receive server push request, request = NotifySubscriberRequest, requestId = 214
+18:49:12:596  INFO 24036 --- [nacos-grpc-client-executor-7] com.alibaba.nacos.common.remote.client   : [a1c4982c-3536-4eac-986d-69597455afdf] Ack server push request, request = NotifySubscriberRequest, requestId = 214
+18:49:12:705  INFO 24036 --- [main] i.s.c.rpc.netty.TmNettyRemotingClient    : register TM success. client version:1.5.2, server version:1.5.2,channel:[id: 0xc1203caf, L:/192.168.100.1:59306 - R:/192.168.100.128:8099]
+18:49:12:708  INFO 24036 --- [main] i.s.core.rpc.netty.NettyPoolableFactory  : register success, cost 33 ms, version:1.5.2,role:TMROLE,channel:[id: 0xc1203caf, L:/192.168.100.1:59306 - R:/192.168.100.128:8099]
+18:49:12:708  INFO 24036 --- [main] i.s.s.a.GlobalTransactionScanner         : Transaction Manager Client is initialized. applicationId[yu-mall-memeber-service] txServiceGroup[mall]
+18:49:12:715  INFO 24036 --- [main] io.seata.rm.datasource.AsyncWorker       : Async Commit Buffer Limit: 10000
+18:49:12:715  INFO 24036 --- [main] i.s.rm.datasource.xa.ResourceManagerXA   : ResourceManagerXA init ...
+18:49:12:719  INFO 24036 --- [main] i.s.core.rpc.netty.NettyClientBootstrap  : NettyClientBootstrap has started
+18:49:12:719  INFO 24036 --- [main] i.s.s.a.GlobalTransactionScanner         : Resource Manager is initialized. applicationId[yu-mall-memeber-service] txServiceGroup[mall]
+18:49:12:719  INFO 24036 --- [main] i.s.s.a.GlobalTransactionScanner         : Global Transaction Clients are initialized. 
+18:49:12:720  INFO 24036 --- [main] trationDelegate$BeanPostProcessorChecker : Bean 'io.seata.spring.boot.autoconfigure.SeataDataSourceAutoConfiguration' of type [io.seata.spring.boot.autoconfigure.SeataDataSourceAutoConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+18:49:12:763  INFO 24036 --- [main] trationDelegate$BeanPostProcessorChecker : Bean 'com.alibaba.cloud.seata.feign.SeataFeignClientAutoConfiguration$FeignBeanPostProcessorConfiguration' of type [com.alibaba.cloud.seata.feign.SeataFeignClientAutoConfiguration$FeignBeanPostProcessorConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+18:49:12:764  INFO 24036 --- [main] trationDelegate$BeanPostProcessorChecker : Bean 'seataFeignObjectWrapper' of type [com.alibaba.cloud.seata.feign.SeataFeignObjectWrapper] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+18:49:12:920  INFO 24036 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8080 (http)
+18:49:12:927  INFO 24036 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+18:49:12:927  INFO 24036 --- [main] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.75]
+18:49:13:022  INFO 24036 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+18:49:13:022  INFO 24036 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2032 ms
+18:49:13:073  WARN 24036 --- [main] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'memberController' defined in file [D:\develop\IT\Project\Mall\yu_mall\mall\member-service\target\classes\com\yu\member\controller\MemberController.class]: Unsatisfied dependency expressed through constructor parameter 0; nested exception is org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'memberServiceImpl' defined in file [D:\develop\IT\Project\Mall\yu_mall\mall\member-service\target\classes\com\yu\member\service\impl\MemberServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0; nested exception is org.springframework.beans.factory.BeanCurrentlyInCreationException: Error creating bean with name 'memberServiceImpl': Requested bean is currently in creation: Is there an unresolvable circular reference?
+18:49:13:075  INFO 24036 --- [NettyClientSelector_TMROLE_1_1] i.s.c.r.n.AbstractNettyRemotingClient    : channel inactive: [id: 0xc1203caf, L:/192.168.100.1:59306 ! R:/192.168.100.128:8099]
+18:49:13:075  INFO 24036 --- [NettyClientSelector_TMROLE_1_1] i.s.c.r.netty.NettyClientChannelManager  : return to pool, rm channel:[id: 0xc1203caf, L:/192.168.100.1:59306 ! R:/192.168.100.128:8099]
+18:49:13:075  INFO 24036 --- [NettyClientSelector_TMROLE_1_1] i.s.core.rpc.netty.NettyPoolableFactory  : channel valid false,channel:[id: 0xc1203caf, L:/192.168.100.1:59306 ! R:/192.168.100.128:8099]
+18:49:13:075  INFO 24036 --- [NettyClientSelector_TMROLE_1_1] i.s.core.rpc.netty.NettyPoolableFactory  : will destroy channel:[id: 0xc1203caf, L:/192.168.100.1:59306 ! R:/192.168.100.128:8099]
+18:49:13:076  INFO 24036 --- [NettyClientSelector_TMROLE_1_1] i.s.c.r.n.AbstractNettyRemotingClient    : ChannelHandlerContext(AbstractNettyRemotingClient$ClientHandler#0, [id: 0xc1203caf, L:/192.168.100.1:59306 ! R:/192.168.100.128:8099]) will closed
+18:49:13:076  INFO 24036 --- [NettyClientSelector_TMROLE_1_1] i.s.c.r.n.AbstractNettyRemotingClient    : ChannelHandlerContext(AbstractNettyRemotingClient$ClientHandler#0, [id: 0xc1203caf, L:/192.168.100.1:59306 ! R:/192.168.100.128:8099]) will closed
+18:49:13:079  INFO 24036 --- [main] o.apache.catalina.core.StandardService   : Stopping service [Tomcat]
+18:49:13:093  INFO 24036 --- [main] ConditionEvaluationReportLoggingListener : 
+
+Error starting ApplicationContext. To display the conditions report re-run your application with 'debug' enabled.
+18:49:13:111 ERROR 24036 --- [main] o.s.b.d.LoggingFailureAnalysisReporter   : 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+The dependencies of some of the beans in the application context form a cycle:
+
+   memberController defined in file [D:\develop\IT\Project\Mall\yu_mall\mall\member-service\target\classes\com\yu\member\controller\MemberController.class]
+┌─────┐
+|  memberServiceImpl defined in file [D:\develop\IT\Project\Mall\yu_mall\mall\member-service\target\classes\com\yu\member\service\impl\MemberServiceImpl.class]
+└─────┘
+
+
+Action:
+
+Relying upon circular references is discouraged and they are prohibited by default. Update your application to remove the dependency cycle between beans. As a last resort, it may be possible to break the cycle automatically by setting spring.main.allow-circular-references to true.
+
+18:49:13:111  WARN 24036 --- [Thread-1] c.a.n.common.http.HttpClientBeanHolder   : [HttpClientBeanHolder] Start destroying common HttpClient
+18:49:13:111  WARN 24036 --- [Thread-5] c.a.nacos.common.notify.NotifyCenter     : [NotifyCenter] Start destroying Publisher
+18:49:13:111  WARN 24036 --- [Thread-5] c.a.nacos.common.notify.NotifyCenter     : [NotifyCenter] Destruction of the end
