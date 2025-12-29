@@ -1,3 +1,3 @@
 # YU-MAll
 鱼的电商系统
-用户端暂时还在mall和mall-vue
+用户端暂时还在mall和YU
