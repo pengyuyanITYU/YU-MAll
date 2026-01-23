@@ -55,7 +55,7 @@ public class AddressController {
     @ApiOperation("查询地址")
     public AjaxResult<Address> getAddressById(@PathVariable Long id){
         log.info("开始查询地址id{}",id);
-        return AjaxResult.success(addressService.getById(id));
+        return AjaxResult.success(addressService.getByAddressId(id));
     }
 
 

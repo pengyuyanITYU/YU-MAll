@@ -12,4 +12,6 @@ public interface IAddressService extends IService<Address> {
     List<Address> listAddress();
 
     void addAddress(AddressDTO addressDTO);
+
+    Address getByAddressId(Long id);
 }

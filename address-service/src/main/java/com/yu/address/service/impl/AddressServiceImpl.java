@@ -20,6 +20,7 @@ public class AddressServiceImpl extends ServiceImpl<AddressMapper, Address> impl
         if(address.getId() == null){
             throw new RuntimeException("id不能为空");
         }
+        address.setUserId(UserContext.getUser());
         updateById(address);
     }
 
@@ -31,9 +32,15 @@ public class AddressServiceImpl extends ServiceImpl<AddressMapper, Address> impl
         }
         List<Address> list = lambdaQuery().eq(Address::getUserId, userId).list();
         log.info("{}",list);
-       return list();
+       return list;
     }
 
+    @Override
+    public Address getByAddressId(Long id) {
+        Long userId = UserContext.getUser();
+        Address one = lambdaQuery().eq(Address::getId, id).eq(Address::getUserId, userId).one();
+        return one;
+    }
 
     @Override
     public void addAddress(AddressDTO addressDTO) {
