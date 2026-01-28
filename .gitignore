@@ -1,7 +1,7 @@
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
-
+.trae
 ### 忽略嵌套的子项目 ###
 YU_MALL-YU/
 
