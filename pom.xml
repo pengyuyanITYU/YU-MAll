@@ -22,7 +22,6 @@
         <module>member-service</module>
         <module>collect-service</module>
         <module>comment-service</module>
-        <module>comment-service</module>
     </modules>
 
     <parent>
@@ -48,6 +47,8 @@
         <knife4j.version>3.0.3</knife4j.version>
         <x-file-storage.version>2.3.0</x-file-storage.version>
         <aliyun.oss.version>3.16.1</aliyun.oss.version>
+        <easyexcel.version>3.3.2</easyexcel.version>
+        <druid.version>1.2.23</druid.version>
     </properties>
 
     <!-- 对依赖包进行管理 -->
@@ -68,6 +69,26 @@
                 <version>${spring-cloud-alibaba.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-data-redis</artifactId>
+                <version>2.7.12</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-pool2</artifactId>
+                <version>2.11.1</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>druid-spring-boot-starter</artifactId>
+                <version>${druid.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>druid</artifactId>
+                <version>${druid.version}</version>
             </dependency>
             <!-- 数据库驱动包管理 -->
             <dependency>
@@ -106,6 +127,11 @@
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-core</artifactId>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>easyexcel</artifactId>
+                <version>${easyexcel.version}</version>
             </dependency>
 
 

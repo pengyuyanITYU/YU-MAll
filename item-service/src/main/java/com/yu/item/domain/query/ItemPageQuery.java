@@ -1,6 +1,5 @@
 package com.yu.item.domain.query;
 
-
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -10,16 +9,22 @@ import lombok.EqualsAndHashCode;
 @Data
 @ApiModel(description = "商品分页查询参数")
 public class ItemPageQuery extends PageQuery {
-    @ApiModelProperty(name = "搜索关键字")
+
+    @ApiModelProperty("搜索关键字")
     private String name;
-    @ApiModelProperty(name = "商品分类")
+
+    @ApiModelProperty("商品分类")
     private String category;
-//    @ApiModelProperty(name = "商品品牌")
-//    private String brand
-    @ApiModelProperty(name = "商品销量")
+
+    @ApiModelProperty("商品品牌")
+    private String brand;
+
+    @ApiModelProperty("销量排序标记")
     private String sold;
-    @ApiModelProperty(name = "价格最小值")
+
+    @ApiModelProperty("最低价")
     private Integer minPrice;
-    @ApiModelProperty(name = "价格最大值")
+
+    @ApiModelProperty("最高价")
     private Integer maxPrice;
 }

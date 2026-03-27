@@ -1,65 +1,76 @@
 package com.yu.item.domain.dto;
 
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.TableField;
+import com.yu.item.domain.po.SpecTemplate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
 @Data
-@ApiModel(description = "商品发布/修改参数")
+@ApiModel(value = "ItemDTO", description = "商品新增/修改参数")
 public class ItemDTO {
 
-    @ApiModelProperty(value = "ID，新增时为空，修改时必填")
+    @ApiModelProperty(value = "商品ID")
     private Long id;
 
-    // --- SPU 基本信息 ---
+    @NotBlank(message = "商品名称不能为空")
     @ApiModelProperty(value = "商品名称", required = true)
     private String name;
 
-    @ApiModelProperty(value = "副标题")
+    @ApiModelProperty(value = "商品副标题")
     private String subTitle;
 
-    @ApiModelProperty(value = "封面图")
+    @NotBlank(message = "商品主图不能为空")
+    @ApiModelProperty(value = "商品主图", required = true)
     private String image;
 
-    @ApiModelProperty(value = "默认价格(起步价)")
-    private Long price;
+    @ApiModelProperty(value = "商品状态：1上架 2下架")
+    private Integer status;
 
-    @ApiModelProperty(value = "原价")
-    private Integer originalPrice;
-
-    @ApiModelProperty(value = "标签，逗号分隔")
-    private String tags;
-
-    @ApiModelProperty(value = "库存")
-    private Integer stock;
-
-    @ApiModelProperty(value = "分类ID")
+    @NotBlank(message = "商品分类不能为空")
+    @ApiModelProperty(value = "商品分类", required = true)
     private String category;
 
-    @ApiModelProperty(value = "品牌ID")
+    @NotBlank(message = "商品品牌不能为空")
+    @ApiModelProperty(value = "商品品牌", required = true)
     private String brand;
 
-    // --- Detail 详情信息 ---
-    @ApiModelProperty(value = "轮播图列表")
+    @NotNull(message = "商品价格不能为空")
+    @Min(value = 0, message = "价格不能小于0")
+    @ApiModelProperty(value = "商品价格(分)", required = true)
+    private Long price;
+
+    @ApiModelProperty(value = "原价(分)")
+    private Integer originalPrice;
+
+    @ApiModelProperty(value = "总库存")
+    private Integer stock;
+
+    @ApiModelProperty(value = "商品标签")
+    private String tags;
+
+    @ApiModelProperty(value = "详情HTML")
+    private String detailHtml;
+
+    @ApiModelProperty(value = "详情视频URL")
+    private String videoUrl;
+
+    @NotEmpty(message = "轮播图不能为空")
+    @ApiModelProperty(value = "轮播图", required = true)
     private List<String> bannerImages;
 
-    @ApiModelProperty(value = "详情信息")
-    private String description;
+    @ApiModelProperty(value = "规格模板")
+    private List<SpecTemplate> specTemplate;
 
-    @ApiModelProperty(value = "状态")
-    private Boolean status;
+    @NotEmpty(message = "SKU不能为空")
+    @ApiModelProperty(value = "SKU列表", required = true)
+    private List<ItemSkuDTO> skus;
 
-    @ApiModelProperty(value = "是否广告")
-    private Boolean isAd;
-
-    @TableField(fill = FieldFill.INSERT)
-    @ApiModelProperty(value = "创建时间")
-    private String createTime;
-
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    @ApiModelProperty(value = "更新时间")
-    private String updateTime;
+    @ApiModelProperty(value = "分类ID")
+    private Long categoryId;
 }

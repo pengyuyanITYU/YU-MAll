@@ -1,5 +1,7 @@
 package com.yu.common.domain.page;
 
+import com.yu.common.constant.HttpStatus;
+
 import java.io.Serializable;
 import java.util.List;
 
@@ -44,6 +46,24 @@ public class TableDataInfo implements Serializable
     public long getTotal()
     {
         return total;
+    }
+
+    public static <T> TableDataInfo success(List<T> list, Long total)
+    {
+        TableDataInfo rspData = new TableDataInfo();
+        rspData.setRows(list);
+        rspData.setTotal(total);
+        rspData.setCode(HttpStatus.SUCCESS);
+        rspData.setMsg("查询成功");
+        return rspData;
+    }
+
+    public static TableDataInfo error(String msg)
+    {
+        TableDataInfo rspData = new TableDataInfo();
+        rspData.setCode(HttpStatus.ERROR);
+        rspData.setMsg(msg);
+        return rspData;
     }
 
     public void setTotal(long total)
