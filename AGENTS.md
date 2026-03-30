@@ -317,3 +317,25 @@ public void someMethod() {
     AjaxResult<ItemDetailVO> result = itemClient.getItemById(1L);
 }
 ```
+
+## ANTI-PATTERNS (THIS PROJECT)
+
+| 规则 | 原因 |
+|------|------|
+| JSON 类型字段实体 **必须** 加 `@TableName(autoResultMap = true)` | MyBatis-Plus 自动转换 JSON 列 |
+| Java Long **必须** 转字符串传前端 | JS 精度丢失（Snowflake ID） |
+| 收藏删除用 `collectId` 而非 `itemId` | API 需要记录 ID |
+| **不要**提交密钥到 Git | 数据库密码、Nacos 配置等 |
+| `@GlobalTransactional` 仅在跨服务调用时使用 | 单服务用本地事务 |
+
+## DEPRECATED
+
+- `OrderConfirmTimeTask` / `OrderConsignTimeTask` — 已废弃
+
+## NOTES
+
+- **Nacos**: 本地默认 `192.168.100.128:8848`
+- **yu-api/yu-common**: 库模块，修改后需 `mvn install`
+- **无 CI/Docker**: 手动构建部署
+- **collect-service**: 使用 `domain/entity` 而非 `domain/po`（命名不一致）
+- **order-service**: 唯一有 `task` 包的服务（定时任务）

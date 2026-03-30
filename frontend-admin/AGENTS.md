@@ -43,7 +43,10 @@ await ElMessageBox.confirm(`确认删除「${row.name}」?`, '提示', { type: '
 - **布局**：`AdminLayout.vue` 包裹业务页
 - **状态管理**：`useAuthStore()` 存储登录信息
 - **表格分页**：`el-table` + `el-pagination`
-- **价格单位**：后端存分，前端 `money(val)` 转元
+## GOTCHAS
+
+- Java Long 已转字符串，前端 ID 作为 string 处理
+- 价格：后端存分，前端 `money(val)` 转元显示
 
 ## DEV
 

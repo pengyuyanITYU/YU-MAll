@@ -17,7 +17,7 @@ bugExperience/
 .sisyphus/
 *.factorypath/
 .project/
-
+img/
 ### IDE ###
 .idea/
 *.iml
