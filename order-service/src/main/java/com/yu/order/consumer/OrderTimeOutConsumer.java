@@ -2,9 +2,7 @@ package com.yu.order.consumer;
 
 
 import com.yu.common.exception.BusinessException;
-import com.yu.order.domain.enums.OrderStatus;
 import com.yu.order.domain.po.Order;
-import com.yu.order.domain.vo.OrderVO;
 import com.yu.order.service.IOrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,8 +11,6 @@ import org.springframework.amqp.rabbit.annotation.Queue;
 import org.springframework.amqp.rabbit.annotation.QueueBinding;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
-
-import java.util.Objects;
 
 @Slf4j
 @RequiredArgsConstructor

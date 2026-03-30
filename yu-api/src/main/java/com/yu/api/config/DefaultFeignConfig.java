@@ -1,16 +1,11 @@
 package com.yu.api.config;
 
-import com.yu.api.fallbacks.ItemFallbackFactory;
-import com.yu.api.fallbacks.MemberFallbackFactory;
-import com.yu.api.fallbacks.OrderFallbackFactory;
-import com.yu.api.fallbacks.UserFallbackFactory;
 import com.yu.common.utils.UserContext;
 import feign.Logger;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
 
 
 @Configuration
@@ -36,25 +31,5 @@ public class DefaultFeignConfig {
                 template.header("user-info", userId.toString());
             }
         };
-    }
-
-    @Bean
-    public MemberFallbackFactory memberFallbackFactory(){
-        return new MemberFallbackFactory();
-    }
-
-    @Bean
-    public UserFallbackFactory userFallbackFactory(){
-        return new UserFallbackFactory();
-    }
-
-    @Bean
-    public OrderFallbackFactory orderFallbackFactory(){
-        return new OrderFallbackFactory();
-    }
-
-    @Bean
-    public ItemFallbackFactory itemFallbackFactory(){
-        return new ItemFallbackFactory();
     }
 }

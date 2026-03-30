@@ -2,6 +2,8 @@ package com.yu.item.controller;
 
 import com.yu.common.domain.AjaxResult;
 import com.yu.common.domain.page.TableDataInfo;
+import com.yu.common.exception.UnauthorizedException;
+import com.yu.common.utils.AdministratorContext;
 import com.yu.common.utils.ExcelUtils;
 import com.yu.item.domain.dto.CategoryDTO;
 import com.yu.item.domain.po.Category;
@@ -28,6 +30,13 @@ import java.util.List;
 public class CategoryController {
 
     private final ICategoryService categoryService;
+
+    @ModelAttribute
+    public void checkAdminLogin() {
+        if (AdministratorContext.getUser() == null) {
+            throw new UnauthorizedException("unauthorized");
+        }
+    }
 
     @PostMapping
     @ApiOperation("新增分类")

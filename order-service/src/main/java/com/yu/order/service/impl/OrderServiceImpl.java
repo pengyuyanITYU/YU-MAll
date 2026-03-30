@@ -1,19 +1,15 @@
 package com.yu.order.service.impl;
 
-import cn.hutool.cache.impl.FIFOCache;
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yu.api.client.AddressClient;
 import com.yu.api.po.Address;
 import com.yu.common.domain.AjaxResult;
-import com.yu.common.utils.CollUtils;
 import com.yu.common.utils.UserContext;
 import com.yu.order.domain.dto.OrderFormDTO;
 import com.yu.order.domain.dto.UpdateOrderStatusDTO;
 import com.yu.order.domain.enums.OrderStatus;
 import com.yu.order.domain.enums.PayType;
 import com.yu.order.domain.po.Order;
-import com.yu.order.domain.po.OrderDetail;
 import com.yu.order.domain.vo.OrderDetailVO;
 import com.yu.order.domain.vo.OrderVO;
 import com.yu.order.mapper.OrderMapper;
@@ -54,7 +50,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         List<Order> list = lambdaQuery().eq(Order::getUserId, userId).list();
         List<OrderVO> orderVOList = list.stream().map(order -> {
             OrderVO orderVO = new OrderVO();
-            AjaxResult<Address> address = addressClient.getAddressById(order.getAddressId());
+            AjaxResult<Address> addressResult = addressClient.getAddressById(order.getAddressId());
+            Address address = addressResult == null ? null : addressResult.getData();
             List<OrderDetailVO> orderDetailVOList = orderDetailService.getByOrderId(order.getId());
             orderVO.setDetails(orderDetailVOList);
             orderVO.setId(order.getId());
@@ -65,9 +62,23 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             orderVO.setPayTime(order.getPayTime());
             orderVO.setConsignTime(order.getConsignTime());
             orderVO.setEndTime(order.getEndTime());
-            orderVO.setReceiverContact(address.getData().getContact());
-            orderVO.setReceiverMobile(address.getData().getMobile());
-            orderVO.setReceiverAddress(address.getData().getStreet());
+            String receiverContact = order.getReceiverContact();
+            String receiverMobile = order.getReceiverMobile();
+            String receiverAddress = order.getReceiverAddress();
+            if (address != null) {
+                if (address.getContact() != null) {
+                    receiverContact = address.getContact();
+                }
+                if (address.getMobile() != null) {
+                    receiverMobile = address.getMobile();
+                }
+                if (address.getStreet() != null) {
+                    receiverAddress = address.getStreet();
+                }
+            }
+            orderVO.setReceiverContact(receiverContact);
+            orderVO.setReceiverMobile(receiverMobile);
+            orderVO.setReceiverAddress(receiverAddress);
             return orderVO;
         }).collect(Collectors.toList());
 

@@ -2,6 +2,8 @@ package com.yu.item.controller;
 
 import com.yu.common.domain.AjaxResult;
 import com.yu.common.domain.page.TableDataInfo;
+import com.yu.common.exception.UnauthorizedException;
+import com.yu.common.utils.AdministratorContext;
 import com.yu.common.utils.ExcelUtils;
 import com.yu.item.domain.dto.ItemDTO;
 import com.yu.item.domain.po.Item;
@@ -29,6 +31,13 @@ import java.util.List;
 public class AdminItemController {
 
     private final IItemService itemService;
+
+    @ModelAttribute
+    public void checkAdminLogin() {
+        if (AdministratorContext.getUser() == null) {
+            throw new UnauthorizedException("unauthorized");
+        }
+    }
 
     @GetMapping("/list")
     @ApiOperation("分页查询商品")

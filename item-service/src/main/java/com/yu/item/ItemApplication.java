@@ -6,7 +6,7 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @EnableFeignClients(basePackages = "com.yu.api.client")
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.yu")
 @EnableCaching
 public class ItemApplication {
 

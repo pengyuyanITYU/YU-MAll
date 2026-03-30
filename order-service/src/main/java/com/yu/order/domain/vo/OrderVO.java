@@ -14,56 +14,55 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-@ApiModel(description = "订单详情视图对象")
+@ApiModel(description = "Order detail view object")
 @Accessors(chain = true)
 public class OrderVO {
 
-    @ApiModelProperty("订单id")
+    @ApiModelProperty("order id")
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
-//    @ApiModelProperty("用户id")
-//    private Long userId;
+    @ApiModelProperty("user id")
+    private Long userId;
 
-    @ApiModelProperty("总金额(元)")
+    @ApiModelProperty("total fee")
     private Long totalFee;
 
-    @ApiModelProperty("支付类型")
+    @ApiModelProperty("payment type")
     private Integer paymentType;
 
-    @ApiModelProperty("订单状态")
+    @ApiModelProperty("order status")
     private Integer status;
 
-    @ApiModelProperty("下单时间")
+    @ApiModelProperty("create time")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    @ApiModelProperty("支付时间")
+    @ApiModelProperty("pay time")
     private LocalDateTime payTime;
 
-    @ApiModelProperty("发货时间")
+    @ApiModelProperty("consign time")
     private LocalDateTime consignTime;
 
-    @ApiModelProperty("完成时间")
+    @ApiModelProperty("end time")
     private LocalDateTime endTime;
 
-    // --- 地址快照信息 ---
-    @ApiModelProperty("收货人")
+    @ApiModelProperty("user nickname")
+    private String nickName;
+
+    @ApiModelProperty("receiver contact")
     private String receiverContact;
 
-    @ApiModelProperty("手机号")
+    @ApiModelProperty("receiver mobile")
     private String receiverMobile;
 
-    @ApiModelProperty("详细地址")
+    @ApiModelProperty("receiver address")
     private String receiverAddress;
 
-    // --- 聚合的商品列表 ---
-    @ApiModelProperty("订单包含的商品列表")
+    @ApiModelProperty("details")
     private List<OrderDetailVO> details;
 
-    @ApiModelProperty("交易关闭时间")
+    @ApiModelProperty("close time")
     private LocalDateTime closeTime;
-
-
 }

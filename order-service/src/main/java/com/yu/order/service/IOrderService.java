@@ -1,10 +1,8 @@
 package com.yu.order.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.yu.order.domain.dto.CommentDTO;
 import com.yu.order.domain.dto.OrderFormDTO;
 import com.yu.order.domain.dto.UpdateOrderStatusDTO;
-import com.yu.order.domain.enums.OrderStatus;
 import com.yu.order.domain.po.Order;
 import com.yu.order.domain.vo.OrderVO;
 

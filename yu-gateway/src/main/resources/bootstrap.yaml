@@ -23,11 +23,11 @@ spring:
         - id: user
           uri: lb://yu-mall-user-service
           predicates:
-            - Path=/users/**,/upload/**
+            - Path=/users/**,/admin/users/**,/upload/**
         - id: order
           uri: lb://yu-mall-order-service
           predicates:
-            - Path=/orders/**
+            - Path=/orders/**,/admin/orders/**
         - id: pay
           uri: lb://yu-mall-pay-service
           predicates:

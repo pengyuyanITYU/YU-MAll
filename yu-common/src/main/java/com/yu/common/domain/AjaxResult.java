@@ -1,5 +1,7 @@
 package com.yu.common.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.yu.common.constant.HttpStatus;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -15,6 +17,7 @@ import java.io.Serializable;
 @Data
 @NoArgsConstructor
 @ApiModel(description = "通用响应对象")
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class AjaxResult<T> implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -104,6 +107,7 @@ public class AjaxResult<T> implements Serializable {
     /**
      * 校验是否成功
      */
+    @JsonIgnore
     public boolean isSuccess() {
         return this.code == HttpStatus.SUCCESS;
     }
