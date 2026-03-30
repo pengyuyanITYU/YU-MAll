@@ -73,11 +73,15 @@ public class OrderDetailServiceImpl extends ServiceImpl<OrderDetailMapper, Order
 
         List<OrderDetail> orderDetailList = orderDetailDTOList.stream().map(orderDetailDTO -> {
             AjaxResult<ItemDetailVO> itemData = itemClient.getItemById(orderDetailDTO.getItemId());
-            if (!itemData.isSuccess()) {
-                log.error("商品{}不存在:{}", orderDetailDTO.getItemId(), itemData.getCode());
+            if (itemData == null || !itemData.isSuccess()) {
+                log.error("商品{}不存在:{}", orderDetailDTO.getItemId(), itemData != null ? itemData.getCode() : "响应为空");
                 throw new RuntimeException("商品不存在");
             }
             ItemDetailVO item = itemData.getData();
+            if (item == null) {
+                log.error("商品{}数据为空", orderDetailDTO.getItemId());
+                throw new RuntimeException("商品数据为空");
+            }
             OrderDetail orderDetail = new OrderDetail();
             orderDetail.setOrderId(orderId)
                     .setItemId(item.getId())

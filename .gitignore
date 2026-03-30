@@ -1,7 +1,7 @@
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
-.trae
+.trae/
 ### 忽略嵌套的子项目 ###
 YU_MALL-YU/
 
@@ -12,7 +12,11 @@ logs/
 *.log
 .trae/
 bugExperience/
-
+*.prefs/
+*.classpath
+.sisyphus/
+*.factorypath/
+.project/
 
 ### IDE ###
 .idea/

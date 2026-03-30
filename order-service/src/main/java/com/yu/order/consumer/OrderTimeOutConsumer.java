@@ -2,6 +2,7 @@ package com.yu.order.consumer;
 
 
 import com.yu.common.exception.BusinessException;
+import com.yu.order.domain.enums.OrderStatus;
 import com.yu.order.domain.po.Order;
 import com.yu.order.service.IOrderService;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,7 @@ public class OrderTimeOutConsumer {
             log.error("订单不存在");
             return;
         }
-        if(byOrderId.getStatus() != 1){
+        if(byOrderId.getStatus() != OrderStatus.UNPAID.getValue()){
             log.info("订单已支付");
             return;
         }
@@ -46,11 +47,11 @@ public class OrderTimeOutConsumer {
             log.error("订单不存在");
             return;
         }
-        if(byOrderId.getStatus() != 3 && byOrderId.getStatus() != 4){
+        if(byOrderId.getStatus() != OrderStatus.SHIPPED.getValue() && byOrderId.getStatus() != OrderStatus.SUCCESS.getValue()){
             log.error("订单状态异常");
             throw new BusinessException("订单状态异常");
         }
-        if(byOrderId.getStatus() == 4){
+        if(byOrderId.getStatus() == OrderStatus.SUCCESS.getValue()){
             log.info("订单已确认");
             return;
         }

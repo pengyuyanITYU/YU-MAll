@@ -159,6 +159,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     public OrderVO getByOrderId(Long id) {
         Long userId = UserContext.getUser();
         Order order = lambdaQuery().eq(Order::getId, id).eq(Order::getUserId, userId).one();
+        if (order == null) {
+            return null;
+        }
 
         AjaxResult<Address> address = addressClient.getAddressById(order.getAddressId());
         List<OrderDetailVO> orderDetailVOList = orderDetailService.getByOrderId(order.getId());
@@ -173,16 +176,24 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         orderVO.setCreateTime(order.getCreateTime());
         orderVO.setCloseTime(order.getCloseTime());
         orderVO.setId(order.getId());
-        orderVO.setReceiverContact(address.getData().getContact());
-        orderVO.setReceiverMobile(address.getData().getMobile());
-        orderVO.setReceiverAddress(address.getData().getStreet());
+        // 安全访问地址信息
+        if (address != null && address.isSuccess() && address.getData() != null) {
+            orderVO.setReceiverContact(address.getData().getContact());
+            orderVO.setReceiverMobile(address.getData().getMobile());
+            orderVO.setReceiverAddress(address.getData().getStreet());
+        } else {
+            // 回退到订单快照中的地址信息
+            orderVO.setReceiverContact(order.getReceiverContact());
+            orderVO.setReceiverMobile(order.getReceiverMobile());
+            orderVO.setReceiverAddress(order.getReceiverAddress());
+        }
         log.info("查询用户{}的订单{}", userId, orderVO);
         return orderVO;
     }
 
     @Override
     public boolean cancelOrder(Long id) {
-        boolean update = lambdaUpdate().eq(Order::getId, id).set(Order::getStatus, 5).set(Order::getCloseTime, LocalDateTime.now()).set(Order::getUpdateTime, LocalDateTime.now()).update();
+        boolean update = lambdaUpdate().eq(Order::getId, id).set(Order::getStatus, OrderStatus.CANCELED.getValue()).set(Order::getCloseTime, LocalDateTime.now()).set(Order::getUpdateTime, LocalDateTime.now()).update();
         return update;
 
     }
@@ -217,7 +228,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Override
     public boolean confirmOrder(Long id) {
         boolean update = lambdaUpdate().eq(Order::getId, id)
-                .set(Order::getStatus, 4)
+                .set(Order::getStatus, OrderStatus.SUCCESS.getValue())
                 .set(Order::getUpdateTime, LocalDateTime.now())
                 .set(Order::getEndTime, LocalDateTime.now())
                 .set(Order::getCloseTime, LocalDateTime.now())

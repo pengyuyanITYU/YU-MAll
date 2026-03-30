@@ -23,7 +23,7 @@
     </div>
 
     <el-table :data="rows" stripe v-loading="loading">
-      <el-table-column prop="id" label="ID" width="110" />
+      <el-table-column type="index" label="序号" :index="rowIndex" width="80" />
       <el-table-column prop="name" label="商品名" min-width="180" show-overflow-tooltip />
       <el-table-column prop="category" label="分类" min-width="120" />
       <el-table-column prop="brand" label="品牌" width="120" />
@@ -60,7 +60,7 @@
     </div>
   </el-card>
 
-  <el-dialog v-model="formVisible" :title="form.id ? '编辑商品' : '新增商品'" width="880px" destroy-on-close>
+  <el-dialog v-model="formVisible" :title="form.id ? '编辑商品' : '新增商品'" width="960px" destroy-on-close>
     <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
       <el-row :gutter="12">
         <el-col :span="12">
@@ -77,8 +77,14 @@
 
       <el-row :gutter="12">
         <el-col :span="12">
-          <el-form-item label="主图URL" prop="image">
-            <el-input v-model="form.image" />
+          <el-form-item label="主图" prop="image">
+            <div class="image-upload-block">
+              <el-upload :show-file-list="false" :http-request="uploadMainImage" :before-upload="beforeImageUpload">
+                <el-button type="primary" plain :loading="mainImageUploading">上传主图</el-button>
+              </el-upload>
+              <el-image v-if="form.image" :src="form.image" fit="cover" class="preview-image" />
+              <el-button v-if="form.image" link type="danger" @click="form.image = ''">清空</el-button>
+            </div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -92,15 +98,10 @@
       </el-row>
 
       <el-row :gutter="12">
-        <el-col :span="12">
-          <el-form-item label="分类" prop="category">
-            <el-input v-model="form.category" placeholder="如：电子产品" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="分类ID">
-            <el-select v-model="form.categoryId" clearable filterable placeholder="可选">
-              <el-option v-for="c in categoryOptions" :key="c.id" :label="`${c.name}(${c.id})`" :value="c.id" />
+        <el-col :span="24">
+          <el-form-item label="分类" prop="categoryId">
+            <el-select v-model="form.categoryId" clearable filterable placeholder="请选择分类" @change="onCategoryChange">
+              <el-option v-for="c in categoryOptions" :key="c.id" :label="c.name" :value="c.id" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -137,39 +138,68 @@
         </el-col>
       </el-row>
 
-      <el-form-item label="轮播图URL" prop="bannerImagesText">
-        <el-input
-          v-model="form.bannerImagesText"
-          type="textarea"
-          :rows="3"
-          placeholder="多个URL请用英文逗号或换行分隔"
-        />
+      <el-form-item label="轮播图" prop="bannerImagesText">
+        <el-upload
+          v-model:file-list="bannerImageFileList"
+          list-type="picture-card"
+          :http-request="uploadBannerImage"
+          :before-upload="beforeImageUpload"
+          :on-success="handleBannerUploadSuccess"
+          :on-remove="handleBannerRemove"
+          :disabled="bannerImageUploading"
+        >
+          <el-icon><Plus /></el-icon>
+        </el-upload>
       </el-form-item>
 
-      <el-row :gutter="12">
-        <el-col :span="12">
-          <el-form-item label="SKU价格(分)" prop="skuPrice">
-            <el-input-number v-model="form.skuPrice" :min="0" :controls="false" style="width: 100%" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="SKU库存" prop="skuStock">
-            <el-input-number v-model="form.skuStock" :min="0" :controls="false" style="width: 100%" />
-          </el-form-item>
-        </el-col>
-      </el-row>
+      <el-form-item label="SKU列表" required>
+        <div class="sku-list-editor">
+          <div v-for="(sku, skuIndex) in form.skus" :key="sku.localKey" class="sku-card">
+            <div class="sku-card-head">
+              <span class="sku-title">SKU {{ skuIndex + 1 }}</span>
+              <el-button link type="danger" :disabled="form.skus.length === 1" @click="removeSku(skuIndex)">删除SKU</el-button>
+            </div>
 
-      <el-form-item label="SKU图URL">
-        <el-input v-model="form.skuImage" />
-      </el-form-item>
+            <el-row :gutter="12">
+              <el-col :span="8">
+                <el-form-item label="价格(分)" label-width="70px">
+                  <el-input-number v-model="sku.price" :min="0" :controls="false" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="8">
+                <el-form-item label="库存" label-width="70px">
+                  <el-input-number v-model="sku.stock" :min="0" :controls="false" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="8">
+                <el-form-item label="图片" label-width="70px">
+                  <div class="image-upload-block">
+                    <el-upload
+                      :show-file-list="false"
+                      :http-request="(options) => uploadSkuImage(options, skuIndex)"
+                      :before-upload="beforeImageUpload"
+                    >
+                      <el-button type="primary" plain size="small" :loading="skuUploadingIndex === skuIndex">上传</el-button>
+                    </el-upload>
+                    <el-image v-if="sku.image" :src="sku.image" fit="cover" class="preview-image preview-image-small" />
+                    <el-button v-if="sku.image" link type="danger" @click="sku.image = ''">清空</el-button>
+                  </div>
+                </el-form-item>
+              </el-col>
+            </el-row>
 
-      <el-form-item label="SKU规格JSON">
-        <el-input
-          v-model="form.skuSpecsText"
-          type="textarea"
-          :rows="2"
-          placeholder='示例：{"颜色":"黑色","内存":"256G"}'
-        />
+            <div class="sku-specs-editor">
+              <div v-for="(value, key) in sku.specsObj" :key="`${sku.localKey}-${key}`" class="spec-item">
+                <el-input :model-value="key" disabled style="width: 160px" />
+                <el-input v-model="sku.specsObj[key]" placeholder="规格值" style="width: 180px" />
+                <el-button type="danger" link @click="deleteSkuSpec(skuIndex, key as string)">删除</el-button>
+              </div>
+              <el-button type="primary" link @click="addSkuSpec(skuIndex)">+ 添加规格</el-button>
+            </div>
+          </div>
+
+          <el-button type="primary" plain @click="addSku">+ 新增SKU</el-button>
+        </div>
       </el-form-item>
 
       <el-form-item label="详情HTML">
@@ -204,10 +234,21 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type UploadProps, type UploadRequestOptions, type UploadUserFile } from 'element-plus';
+import { Plus } from '@element-plus/icons-vue';
 import { listCategoriesSimple } from '@/api/categories';
 import { createItem, deleteItem, getItemDetail, listItems, updateItem } from '@/api/items';
+import { uploadFile } from '@/api/upload';
 import type { CategoryModel, ItemModel } from '@/types/domain';
+
+interface SkuEditModel {
+  localKey: string;
+  id?: number | string;
+  price?: number;
+  stock?: number;
+  image: string;
+  specsObj: Record<string, string>;
+}
 
 const loading = ref(false);
 const rows = ref<ItemModel[]>([]);
@@ -226,6 +267,28 @@ const categoryOptions = ref<CategoryModel[]>([]);
 const formVisible = ref(false);
 const submitLoading = ref(false);
 const formRef = ref<FormInstance>();
+const mainImageUploading = ref(false);
+const bannerImageUploading = ref(false);
+const bannerImageFileList = ref<UploadUserFile[]>([]);
+const skuUploadingIndex = ref<number | null>(null);
+
+let skuKeySeed = 0;
+function nextSkuKey() {
+  skuKeySeed += 1;
+  return `sku-${Date.now()}-${skuKeySeed}`;
+}
+
+function createSku(initial?: Partial<SkuEditModel>): SkuEditModel {
+  return {
+    localKey: nextSkuKey(),
+    id: initial?.id,
+    price: initial?.price,
+    stock: initial?.stock,
+    image: initial?.image || '',
+    specsObj: initial?.specsObj ? { ...initial.specsObj } : {}
+  };
+}
+
 const form = reactive({
   id: undefined as number | string | undefined,
   name: '',
@@ -242,21 +305,17 @@ const form = reactive({
   detailHtml: '',
   videoUrl: '',
   bannerImagesText: '',
-  skuPrice: undefined as number | undefined,
-  skuStock: undefined as number | undefined,
-  skuImage: '',
-  skuSpecsText: '{}'
+  specTemplate: [] as any[],
+  skus: [createSku()] as SkuEditModel[]
 });
 
 const rules: FormRules = {
   name: [{ required: true, message: '请输入商品名', trigger: 'blur' }],
-  image: [{ required: true, message: '请输入主图URL', trigger: 'blur' }],
-  category: [{ required: true, message: '请输入分类', trigger: 'blur' }],
+  image: [{ required: true, message: '请上传主图', trigger: 'change' }],
+  categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
   brand: [{ required: true, message: '请输入品牌', trigger: 'blur' }],
   price: [{ required: true, message: '请输入价格', trigger: 'change' }],
-  bannerImagesText: [{ required: true, message: '请输入轮播图URL', trigger: 'blur' }],
-  skuPrice: [{ required: true, message: '请输入SKU价格', trigger: 'change' }],
-  skuStock: [{ required: true, message: '请输入SKU库存', trigger: 'change' }]
+  bannerImagesText: [{ required: true, message: '请上传轮播图', trigger: 'change' }]
 };
 
 const detailVisible = ref(false);
@@ -266,6 +325,108 @@ function money(amount?: number) {
   if (amount === undefined || amount === null) return '0.00';
   return (Number(amount) / 100).toFixed(2);
 }
+
+function rowIndex(index: number) {
+  return (query.pageNo - 1) * query.pageSize + index + 1;
+}
+function extractUploadedUrl(response: any) {
+  return response?.data?.url || response?.url || response?.data?.data?.url || '';
+}
+
+function syncBannerImagesTextFromList() {
+  form.bannerImagesText = bannerImageFileList.value
+    .map((file) => (file.url || '').trim())
+    .filter(Boolean)
+    .join('\n');
+}
+
+const beforeImageUpload: UploadProps['beforeUpload'] = (rawFile) => {
+  const isImage = rawFile.type.startsWith('image/');
+  const isLt5M = rawFile.size / 1024 / 1024 < 5;
+  if (!isImage) {
+    ElMessage.error('只允许上传图片文件');
+    return false;
+  }
+  if (!isLt5M) {
+    ElMessage.error('图片大小不能超过 5MB');
+    return false;
+  }
+  return true;
+};
+
+async function uploadMainImage(options: UploadRequestOptions) {
+  mainImageUploading.value = true;
+  try {
+    const res = await uploadFile(options.file as File);
+    const url = extractUploadedUrl(res);
+    if (!url) {
+      throw new Error('上传结果缺少图片地址');
+    }
+    form.image = url;
+    options.onSuccess?.(res as any);
+    ElMessage.success('主图上传成功');
+  } catch (error) {
+    options.onError?.(error as any);
+    ElMessage.error('主图上传失败');
+  } finally {
+    mainImageUploading.value = false;
+  }
+}
+
+async function uploadBannerImage(options: UploadRequestOptions) {
+  bannerImageUploading.value = true;
+  try {
+    const res = await uploadFile(options.file as File);
+    const url = extractUploadedUrl(res);
+    if (!url) {
+      throw new Error('上传结果缺少图片地址');
+    }
+    options.onSuccess?.({ ...res, data: { ...(res as any).data, url } } as any);
+    ElMessage.success('轮播图上传成功');
+  } catch (error) {
+    options.onError?.(error as any);
+    ElMessage.error('轮播图上传失败');
+  } finally {
+    bannerImageUploading.value = false;
+  }
+}
+
+const handleBannerUploadSuccess: UploadProps['onSuccess'] = (response, uploadFile) => {
+  const url = extractUploadedUrl(response);
+  if (!url) {
+    ElMessage.error('轮播图地址解析失败');
+    return;
+  }
+  uploadFile.url = url;
+  syncBannerImagesTextFromList();
+};
+
+const handleBannerRemove: UploadProps['onRemove'] = () => {
+  syncBannerImagesTextFromList();
+};
+
+async function uploadSkuImage(options: UploadRequestOptions, skuIndex: number) {
+  skuUploadingIndex.value = skuIndex;
+  try {
+    const res = await uploadFile(options.file as File);
+    const url = extractUploadedUrl(res);
+    if (!url) {
+      throw new Error('上传结果缺少图片地址');
+    }
+    const sku = form.skus[skuIndex];
+    if (sku) {
+      sku.image = url;
+    }
+    options.onSuccess?.(res as any);
+    ElMessage.success('SKU图片上传成功');
+  } catch (error) {
+    options.onError?.(error as any);
+    ElMessage.error('SKU图片上传失败');
+  } finally {
+    skuUploadingIndex.value = null;
+  }
+}
+
 
 async function load() {
   loading.value = true;
@@ -283,6 +444,15 @@ async function loadCategories() {
   if (res.code === 200 && Array.isArray(res.data)) {
     categoryOptions.value = res.data;
   }
+}
+
+function onCategoryChange(value?: number) {
+  if (value === undefined || value === null) {
+    form.category = '';
+    return;
+  }
+  const matched = categoryOptions.value.find((c) => c.id === Number(value));
+  form.category = matched?.name || '';
 }
 
 function search() {
@@ -315,10 +485,9 @@ function resetForm() {
   form.detailHtml = '';
   form.videoUrl = '';
   form.bannerImagesText = '';
-  form.skuPrice = undefined;
-  form.skuStock = undefined;
-  form.skuImage = '';
-  form.skuSpecsText = '{}';
+  bannerImageFileList.value = [];
+  form.specTemplate = [];
+  form.skus = [createSku()];
 }
 
 function openCreate() {
@@ -326,36 +495,51 @@ function openCreate() {
   formVisible.value = true;
 }
 
-async function openEdit(row: ItemModel) {
-  const res = await getItemDetail(row.id);
-  if (res.code !== 200 || !res.data) {
+function addSku() {
+  form.skus.push(createSku({ image: form.image || '' }));
+}
+
+function removeSku(index: number) {
+  if (form.skus.length === 1) {
+    form.skus[0] = createSku({ image: form.image || '' });
     return;
   }
-  const detail = res.data;
-  resetForm();
-  form.id = detail.id;
-  form.name = detail.name || '';
-  form.subTitle = detail.subTitle || '';
-  form.image = detail.image || '';
-  form.status = detail.status || 1;
-  form.category = detail.category || '';
-  form.categoryId = detail.categoryId;
-  form.brand = detail.brand || '';
-  form.price = detail.price;
-  form.originalPrice = detail.originalPrice;
-  form.stock = detail.stock;
-  form.tags = detail.tags || '';
-  form.detailHtml = detail.detailHtml || '';
-  form.videoUrl = detail.videoUrl || '';
-  form.bannerImagesText = Array.isArray(detail.bannerImages) ? detail.bannerImages.join('\n') : '';
-  if (Array.isArray(detail.skuList) && detail.skuList.length > 0) {
-    const sku = detail.skuList[0];
-    form.skuPrice = sku.price;
-    form.skuStock = sku.stock;
-    form.skuImage = sku.image || '';
-    form.skuSpecsText = JSON.stringify(sku.specs || {}, null, 2);
-  }
-  formVisible.value = true;
+  form.skus.splice(index, 1);
+}
+
+function addSkuSpec(skuIndex: number) {
+  ElMessageBox.prompt('请输入规格名称', '添加规格', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    inputPattern: /\S+/,
+    inputErrorMessage: '规格名称不能为空'
+  })
+    .then(({ value }) => {
+      const sku = form.skus[skuIndex];
+      if (!sku) return;
+      if (!Object.prototype.hasOwnProperty.call(sku.specsObj, value)) {
+        sku.specsObj[value] = '';
+      }
+    })
+    .catch(() => {});
+}
+
+function deleteSkuSpec(skuIndex: number, key: string) {
+  const sku = form.skus[skuIndex];
+  if (!sku) return;
+  delete sku.specsObj[key];
+}
+
+function sanitizeSpecs(specsObj: Record<string, string> | undefined) {
+  if (!specsObj) return {};
+  return Object.entries(specsObj).reduce<Record<string, string>>((acc, [key, value]) => {
+    const specKey = (key || '').trim();
+    const specValue = (value || '').trim();
+    if (specKey && specValue) {
+      acc[specKey] = specValue;
+    }
+    return acc;
+  }, {});
 }
 
 function parseBannerImages(text: string): string[] {
@@ -365,44 +549,139 @@ function parseBannerImages(text: string): string[] {
     .filter(Boolean);
 }
 
-function parseSkuSpecs(text: string): Record<string, string> {
-  if (!text || !text.trim()) {
-    return {};
+function toOptionalNumber(value?: number) {
+  if (value === undefined || value === null) {
+    return undefined;
   }
-  try {
-    const parsed = JSON.parse(text);
-    return typeof parsed === 'object' && parsed ? parsed : {};
-  } catch {
-    return {};
+  return Number(value);
+}
+
+function validateSkuList() {
+  if (!Array.isArray(form.skus) || form.skus.length === 0) {
+    ElMessage.error('请至少添加一个SKU');
+    return false;
   }
+
+  const signatureSet = new Set<string>();
+  for (let i = 0; i < form.skus.length; i += 1) {
+    const sku = form.skus[i];
+    if (sku.price === undefined || sku.price === null) {
+      ElMessage.error(`请填写SKU ${i + 1} 的价格`);
+      return false;
+    }
+    if (sku.stock === undefined || sku.stock === null) {
+      ElMessage.error(`请填写SKU ${i + 1} 的库存`);
+      return false;
+    }
+    const specs = sanitizeSpecs(sku.specsObj);
+    if (Object.keys(specs).length === 0) {
+      ElMessage.error(`请填写SKU ${i + 1} 的规格`);
+      return false;
+    }
+    const signature = Object.entries(specs)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([key, value]) => `${key}:${value}`)
+      .join('|');
+    if (signatureSet.has(signature)) {
+      ElMessage.error(`SKU ${i + 1} 的规格与其他SKU重复`);
+      return false;
+    }
+    signatureSet.add(signature);
+  }
+
+  return true;
+}
+
+async function openEdit(row: ItemModel) {
+  const res = await getItemDetail(row.id);
+  if (res.code !== 200 || !res.data) {
+    return;
+  }
+
+  const detail = res.data;
+  resetForm();
+  form.id = detail.id;
+  form.name = detail.name || '';
+  form.subTitle = detail.subTitle || '';
+  form.image = detail.image || '';
+  form.status = detail.status ?? 1;
+  form.category = detail.category || '';
+  form.categoryId = detail.categoryId;
+  if (form.categoryId !== undefined && form.categoryId !== null) {
+    onCategoryChange(form.categoryId);
+  } else if (form.category) {
+    const matchedCategory = categoryOptions.value.find((c) => c.name === form.category);
+    if (matchedCategory) {
+      form.categoryId = matchedCategory.id;
+      onCategoryChange(matchedCategory.id);
+    }
+  }
+  form.brand = detail.brand || '';
+  form.price = detail.price;
+  form.originalPrice = detail.originalPrice;
+  form.stock = detail.stock;
+  form.tags = detail.tags || '';
+  form.detailHtml = detail.detailHtml || '';
+  form.videoUrl = detail.videoUrl || '';
+  form.specTemplate = Array.isArray(detail.specTemplate) ? [...detail.specTemplate] : [];
+  const bannerImages = Array.isArray(detail.bannerImages) ? detail.bannerImages.filter(Boolean) : [];
+  form.bannerImagesText = bannerImages.join('\n');
+  bannerImageFileList.value = bannerImages.map((url: string, index: number) => ({
+    name: 'banner-' + (index + 1),
+    url,
+    status: 'success'
+  }));
+
+  if (Array.isArray(detail.skuList) && detail.skuList.length > 0) {
+    form.skus = detail.skuList.map((sku: any) =>
+      createSku({
+        id: sku.id,
+        price: sku.price,
+        stock: sku.stock,
+        image: sku.image || '',
+        specsObj: sanitizeSpecs(sku.specs)
+      })
+    );
+  } else {
+    form.skus = [createSku({ image: form.image || '' })];
+  }
+
+  formVisible.value = true;
 }
 
 function buildPayload() {
+  const payloadSkus = form.skus.map((sku) => {
+    const payloadSku: any = {
+      specs: sanitizeSpecs(sku.specsObj),
+      price: Number(sku.price),
+      stock: Number(sku.stock),
+      image: sku.image || form.image
+    };
+    if (sku.id !== undefined && sku.id !== null) {
+      payloadSku.id = Number(sku.id);
+    }
+    return payloadSku;
+  });
+
   const payload: any = {
     name: form.name,
     subTitle: form.subTitle,
     image: form.image,
     status: form.status,
-    category: form.category,
+    category: categoryOptions.value.find((c) => c.id === form.categoryId)?.name || form.category,
     categoryId: form.categoryId,
     brand: form.brand,
     price: Number(form.price),
-    originalPrice: form.originalPrice ? Number(form.originalPrice) : undefined,
-    stock: form.stock ? Number(form.stock) : undefined,
+    originalPrice: toOptionalNumber(form.originalPrice),
+    stock: toOptionalNumber(form.stock),
     tags: form.tags,
     detailHtml: form.detailHtml,
     videoUrl: form.videoUrl,
     bannerImages: parseBannerImages(form.bannerImagesText),
-    specTemplate: [],
-    skus: [
-      {
-        specs: parseSkuSpecs(form.skuSpecsText),
-        price: Number(form.skuPrice),
-        stock: Number(form.skuStock),
-        image: form.skuImage || form.image
-      }
-    ]
+    specTemplate: Array.isArray(form.specTemplate) ? form.specTemplate : [],
+    skus: payloadSkus
   };
+
   if (form.id) {
     payload.id = form.id;
   }
@@ -413,6 +692,7 @@ async function submit() {
   if (!formRef.value) return;
   const valid = await formRef.value.validate().catch(() => false);
   if (!valid) return;
+  if (!validateSkuList()) return;
 
   submitLoading.value = true;
   try {
@@ -475,4 +755,65 @@ onMounted(async () => {
   display: flex;
   justify-content: flex-end;
 }
+
+.image-upload-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.preview-image {
+  width: 64px;
+  height: 64px;
+  border-radius: 6px;
+  border: 1px solid rgba(15, 42, 70, 0.14);
+}
+
+.preview-image-small {
+  width: 40px;
+  height: 40px;
+}
+
+.sku-list-editor {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sku-card {
+  border: 1px solid rgba(15, 42, 70, 0.12);
+  border-radius: 8px;
+  padding: 12px;
+  background: #fafcff;
+}
+
+.sku-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.sku-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2d3d;
+}
+
+.sku-specs-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.spec-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 </style>
+
+
+

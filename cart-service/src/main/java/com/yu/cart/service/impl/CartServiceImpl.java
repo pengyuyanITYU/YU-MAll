@@ -9,6 +9,7 @@ import com.yu.cart.domain.po.Cart;
 import com.yu.cart.domain.vo.CartVO;
 import com.yu.cart.mapper.CartMapper;
 import com.yu.cart.service.ICartService;
+import com.yu.common.domain.AjaxResult;
 import com.yu.common.utils.UserContext;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -39,10 +40,11 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements IC
             throw new RuntimeException("未获取到用户信息，请检查登录状态");
         }
 
-        ItemDetailVO item = itemClient.getItemById(cartFormDTO.getItemId()).getData();
-        if (item == null){
+        AjaxResult<ItemDetailVO> itemResult = itemClient.getItemById(cartFormDTO.getItemId());
+        if (itemResult == null || !itemResult.isSuccess() || itemResult.getData() == null) {
             throw new RuntimeException("商品不存在");
         }
+        ItemDetailVO item = itemResult.getData();
         Cart c = lambdaQuery().eq(Cart::getUserId, userId).eq(Cart::getItemId, cartFormDTO.getItemId()).one();
         if(c != null){
             c.setNum(c.getNum() + cartFormDTO.getNum());

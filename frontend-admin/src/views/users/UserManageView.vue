@@ -17,7 +17,14 @@
     </el-form>
 
     <el-table :data="rows" v-loading="loading" stripe>
-      <el-table-column prop="id" label="ID" width="110" />
+      <el-table-column type="index" label="序号" :index="rowIndex" width="80" />
+      <el-table-column label="头像" width="80">
+        <template #default="{ row }">
+          <el-avatar :size="32" :src="row.avatar">
+            {{ (row.nickName || row.username || 'U').charAt(0) }}
+          </el-avatar>
+        </template>
+      </el-table-column>
       <el-table-column prop="username" label="用户名" min-width="130" />
       <el-table-column prop="nickName" label="昵称" min-width="120" />
       <el-table-column prop="phone" label="手机号" min-width="140" />
@@ -113,6 +120,10 @@ function userStatus(status: unknown): number {
 function money(amount?: number) {
   if (amount === undefined || amount === null) return '0.00';
   return (Number(amount) / 100).toFixed(2);
+}
+
+function rowIndex(index: number) {
+  return (query.pageNo - 1) * query.pageSize + index + 1;
 }
 
 async function load() {

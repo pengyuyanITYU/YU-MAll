@@ -15,9 +15,13 @@ public class ItemDetailVO {
 
     private String subTitle;
 
+    private String image;
+
     private Long price;
 
     private Integer originalPrice;
+
+    private Integer stock;
 
     private String tags;
 
@@ -28,6 +32,8 @@ public class ItemDetailVO {
     private Integer status;
 
     private String category;
+
+    private Long categoryId;
 
     private String brand;
 

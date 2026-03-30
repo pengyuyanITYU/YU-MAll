@@ -33,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -62,6 +63,7 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateStockAndSold(List<OrderDetailDTO> orderDetailDTOList) {
         if (CollUtils.isEmpty(orderDetailDTOList)) {
             return;
@@ -77,8 +79,14 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
             }
             int sold = item.getSold() == null ? 0 : item.getSold();
             int stock = item.getStock() == null ? 0 : item.getStock();
-            item.setSold(sold + orderDetailDTO.getNum());
-            item.setStock(stock - orderDetailDTO.getNum());
+            int num = orderDetailDTO.getNum() != null ? orderDetailDTO.getNum() : 0;
+            // 库存检查：防止库存变为负数
+            if (stock < num) {
+                log.warn("商品库存不足, itemId={}, 当前库存={}, 扣减数量={}", item.getId(), stock, num);
+                throw new BusinessException("商品库存不足: " + item.getName());
+            }
+            item.setSold(sold + num);
+            item.setStock(stock - num);
             items.add(item);
         }
         if (CollUtils.isEmpty(items)) {
@@ -306,6 +314,9 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         vo.setStatus(item.getStatus());
         vo.setCategory(item.getCategory());
         vo.setBrand(item.getBrand());
+        vo.setImage(item.getImage());
+        vo.setStock(item.getStock());
+        vo.setCategoryId(item.getCategoryId());
         if (itemDetail != null) {
             vo.setBannerImages(parseStringList(itemDetail.getBannerImages()));
             vo.setDetailHtml(itemDetail.getDetailHtml());

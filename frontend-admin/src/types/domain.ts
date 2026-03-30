@@ -16,6 +16,7 @@ export interface UserModel {
   id: number | string;
   username: string;
   nickName?: string;
+  avatar?: string;
   phone?: string;
   email?: string;
   balance?: number;
