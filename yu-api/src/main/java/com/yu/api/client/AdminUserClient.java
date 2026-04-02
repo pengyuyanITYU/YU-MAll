@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
-@FeignClient(contextId = "adminUserClient", name = "yu-mall-user-service", path = "/admin/users")
+@FeignClient(contextId = "adminUserClient", name = "yu-mall-user-center-service", path = "/admin/users")
 public interface AdminUserClient {
     @GetMapping("/all")
     AjaxResult<List<UserVO>> getUserInfoByIds(@RequestParam List<Long> ids);

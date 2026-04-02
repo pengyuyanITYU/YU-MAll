@@ -11,7 +11,12 @@ tmp
 logs/
 *.log
 application-local.yaml
+.playwright-mcp
+AITEST/
+.m2/
 .trae/
+.project
+myConfig/
 bugExperience/
 *.prefs/
 *.classpath

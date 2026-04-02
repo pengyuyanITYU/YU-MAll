@@ -1,0 +1,4 @@
+com.yu.common.config.MyMetaObjectHandler
+com.yu.common.config.MyBatisConfig
+com.yu.common.config.MvcConfig
+com.yu.common.config.JsonConfig

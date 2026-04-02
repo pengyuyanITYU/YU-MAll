@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 
-@FeignClient(name="yu-mall-member-service",path="/members",fallbackFactory = MemberFallbackFactory.class)
+@FeignClient(contextId = "memberClient", name="yu-mall-user-center-service",path="/members",fallbackFactory = MemberFallbackFactory.class)
 public interface MemberClient {
 
     @GetMapping("/{id}")

@@ -7,7 +7,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@FeignClient(value="yu-mall-address-service",path="/addresses",fallbackFactory = AddressFallbackFactory.class)
+@FeignClient(contextId = "addressClient", value="yu-mall-user-center-service",path="/addresses",fallbackFactory = AddressFallbackFactory.class)
 public interface AddressClient {
 
     @GetMapping("/{id}")

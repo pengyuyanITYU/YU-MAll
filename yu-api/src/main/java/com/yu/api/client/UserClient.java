@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@FeignClient(contextId = "userClient", name="yu-mall-user-service",path="/users",fallbackFactory = UserFallbackFactory.class)
+@FeignClient(contextId = "userClient", name="yu-mall-user-center-service",path="/users",fallbackFactory = UserFallbackFactory.class)
 public interface UserClient {
 
     @ApiOperation("扣减用户余额")

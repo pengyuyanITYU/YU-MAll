@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Collection;
 
-@FeignClient(value="yu-mall-cart-service",path="/carts")
+@FeignClient(contextId = "cartClient", value="yu-mall-order-service",path="/carts")
 public interface CartClient {
 
 }

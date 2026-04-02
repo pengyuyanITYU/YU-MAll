@@ -9,7 +9,7 @@ import com.yu.common.domain.AjaxResult;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
-@FeignClient(name="yu-mall-order-service",path="/orders",fallbackFactory = OrderFallbackFactory.class)
+@FeignClient(contextId = "orderClient", name="yu-mall-order-service",path="/orders",fallbackFactory = OrderFallbackFactory.class)
 public interface OrderClient {
 
     @PutMapping("/updateStatus")

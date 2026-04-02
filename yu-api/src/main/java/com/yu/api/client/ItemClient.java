@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.util.List;
 
 
-@FeignClient(value = "yu-mall-item-service", path = "/items", fallbackFactory = ItemFallbackFactory.class)
+@FeignClient(value = "yu-mall-product-service", path = "/items", fallbackFactory = ItemFallbackFactory.class)
 public interface ItemClient {
 
     @GetMapping("/{id}")

@@ -15,15 +15,15 @@ spring:
     gateway:
       routes:
         - id: item
-          uri: lb://yu-mall-item-service
+          uri: lb://yu-mall-product-service
           predicates:
             - Path=/items/**,/admin/items/**,/admin/categories/**,/search/**
         - id: cart
-          uri: lb://yu-mall-cart-service
+          uri: lb://yu-mall-order-service
           predicates:
             - Path=/carts/**
         - id: user
-          uri: lb://yu-mall-user-service
+          uri: lb://yu-mall-user-center-service
           predicates:
             - Path=/users/**,/admin/users/**,/upload/**
         - id: order
@@ -39,19 +39,19 @@ spring:
           predicates:
             - Path=/search/**
         - id: address
-          uri: lb://yu-mall-address-service
+          uri: lb://yu-mall-user-center-service
           predicates:
             - Path=/addresses/**
         - id: member
-          uri: lb://yu-mall-member-service
+          uri: lb://yu-mall-user-center-service
           predicates:
             - Path=/members/**
         - id: collect
-          uri: lb://yu-mall-collect-service
+          uri: lb://yu-mall-product-service
           predicates:
             - Path=/collects/**
         - id: comment
-          uri: lb://yu-mall-comment-service
+          uri: lb://yu-mall-product-service
           predicates:
             - Path=/comments/**
 
@@ -62,7 +62,7 @@ knife4j:
     enable-openapi: true
     routes:
       - name: 用户服务
-        service-name: user-service
+        service-name: user-center-service
         path: /user/**
         url: /v3/api-docs
       - name: 订单服务
