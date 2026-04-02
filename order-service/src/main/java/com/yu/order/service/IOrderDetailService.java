@@ -7,8 +7,8 @@ import com.yu.order.domain.enums.OrderStatus;
 import com.yu.order.domain.po.OrderDetail;
 import com.yu.order.domain.vo.OrderDetailVO;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotEmpty;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 
 public interface IOrderDetailService extends IService<OrderDetail> {
@@ -24,3 +24,4 @@ public interface IOrderDetailService extends IService<OrderDetail> {
 
     void updateOrderCommented(CommentDTO commentDTO);
 }
+

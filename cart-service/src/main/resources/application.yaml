@@ -1,0 +1,99 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: yu-mall-cart-service
+  cloud:
+    nacos:
+      server-addr: 192.168.100.128:8848
+      config:
+        import-check:
+          enabled: false
+      discovery:
+        server-addr: 192.168.100.128:8848
+    sentinel:
+      transport:
+        dashboard: localhost:8090
+      http-method-specify: true
+  datasource:
+    url: jdbc:mysql://${yu.db.host:192.168.100.128}:${yu.db.port:3307}/${yu.db.database}?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai&useSSL=false&rewriteBatchedStatements=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${yu.db.un:root}
+    password: ${yu.db.pw:123}
+  rabbitmq:
+    host: 192.168.100.128
+    port: 5672
+    virtual-host: /yu
+    username: YU
+    password: 123
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      message-converter: org.springframework.amqp.support.converter.Jackson2JsonMessageConverter
+    listener:
+      simple:
+        prefetch: 5
+        acknowledge-mode: auto
+        retry:
+          enabled: true
+          initial-interval: 1000ms
+          multiplier: 2
+          max-attempts: 3
+          stateless: true
+        message-converter: org.springframework.amqp.support.converter.Jackson2JsonMessageConverter
+
+feign:
+  okhttp:
+    enabled: true
+    connection-timeout: 2000
+    read-timeout: 5000
+  sentinel:
+    enabled: true
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
+  global-config:
+    db-config:
+      update-strategy: not_null
+      id-type: auto
+
+seata:
+  registry:
+    type: nacos
+    nacos:
+      server-addr: 192.168.100.128:8848
+      namespace: ""
+      group: DEFAULT_GROUP
+      application: seata-server
+      username: nacos
+      password: nacos
+  tx-service-group: mall
+  service:
+    vgroup-mapping:
+      mall: "default"
+  data-source-proxy-mode: AT
+
+jackson:
+  date-format: yyyy-MM-dd HH:mm:ss
+  time-zone: GMT+8
+  deserialization:
+    fail-on-unknown-properties: false
+
+logging:
+  level:
+    com.yu: debug
+  pattern:
+    dateformat: HH:mm:ss:SSS
+  file:
+    path: logs/${spring.application.name}
+
+yu:
+  db:
+    host: 192.168.100.128
+    port: 3307
+    database: mall-cart
+    un: root
+    pw: 123

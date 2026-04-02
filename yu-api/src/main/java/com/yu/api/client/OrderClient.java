@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @FeignClient(name="yu-mall-order-service",path="/orders",fallbackFactory = OrderFallbackFactory.class)
 public interface OrderClient {
 
-    @PutMapping("/updateStatus/{id}")
+    @PutMapping("/updateStatus")
     AjaxResult<Void> updateOrderStatus(@RequestBody UpdateOrderStatusDTO updateOrderStatusDTO);
 
     @PutMapping("/commented")

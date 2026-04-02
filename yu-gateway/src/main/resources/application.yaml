@@ -1,0 +1,114 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: yu-mall-gateway-service
+  cloud:
+    nacos:
+      server-addr: 192.168.100.128:8848
+      config:
+        import-check:
+          enabled: false
+      discovery:
+        server-addr: 192.168.100.128:8848
+    gateway:
+      routes:
+        - id: item
+          uri: lb://yu-mall-item-service
+          predicates:
+            - Path=/items/**,/admin/items/**,/admin/categories/**,/search/**
+        - id: cart
+          uri: lb://yu-mall-cart-service
+          predicates:
+            - Path=/carts/**
+        - id: user
+          uri: lb://yu-mall-user-service
+          predicates:
+            - Path=/users/**,/admin/users/**,/upload/**
+        - id: order
+          uri: lb://yu-mall-order-service
+          predicates:
+            - Path=/orders/**,/admin/orders/**
+        - id: pay
+          uri: lb://yu-mall-pay-service
+          predicates:
+            - Path=/pay-orders/**
+        - id: search
+          uri: lb://yu-mall-search-service
+          predicates:
+            - Path=/search/**
+        - id: address
+          uri: lb://yu-mall-address-service
+          predicates:
+            - Path=/addresses/**
+        - id: member
+          uri: lb://yu-mall-member-service
+          predicates:
+            - Path=/members/**
+        - id: collect
+          uri: lb://yu-mall-collect-service
+          predicates:
+            - Path=/collects/**
+        - id: comment
+          uri: lb://yu-mall-comment-service
+          predicates:
+            - Path=/comments/**
+
+knife4j:
+  enable: true
+  gateway:
+    enabled: true
+    enable-openapi: true
+    routes:
+      - name: 用户服务
+        service-name: user-service
+        path: /user/**
+        url: /v3/api-docs
+      - name: 订单服务
+        service-name: order-service
+        path: /order/**
+        url: /v3/api-docs
+      - name: 管理后台服务
+        service-name: admin-service
+        path: /admin/**
+        url: /v3/api-docs
+
+seata:
+  registry:
+    type: nacos
+    nacos:
+      server-addr: 192.168.100.128:8848
+      namespace: ""
+      group: DEFAULT_GROUP
+      application: seata-server
+      username: nacos
+      password: nacos
+  tx-service-group: mall
+  service:
+    vgroup-mapping:
+      mall: "default"
+  data-source-proxy-mode: AT
+
+logging:
+  level:
+    com.yu: debug
+  pattern:
+    dateformat: HH:mm:ss:SSS
+  file:
+    path: logs/${spring.application.name}
+
+yu:
+  jwt:
+    location: classpath:hmall.jks
+    password: hmall123
+    alias: hmall
+  auth:
+    excludePaths: # 无需登录校验的路径
+      - /search/**
+      - /users/login
+      - /items/**
+      - /users/register
+      - /upload
+      - /comments/all/**
+      - /admins/**

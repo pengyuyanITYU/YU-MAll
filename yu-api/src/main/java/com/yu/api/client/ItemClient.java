@@ -20,4 +20,7 @@ public interface ItemClient {
     @GetMapping("/batch")
     AjaxResult<List<ItemDetailVO>> getItemByIds(@RequestParam List<Long> ids);
 
+    @GetMapping("/sku/{skuId}")
+    AjaxResult<ItemDetailVO> getItemBySkuId(@PathVariable("skuId") Long skuId);
+
 }

@@ -28,6 +28,12 @@ public class ItemFallbackFactory implements FallbackFactory<ItemClient> {
                 log.error("商品服务,批量查询商品失败", cause);
                 return AjaxResult.error("商品服务,批量查询商品失败");
             }
+
+            @Override
+            public AjaxResult<ItemDetailVO> getItemBySkuId(Long skuId) {
+                log.error("商品服务,根据SKU ID查询商品失败, skuId={}", skuId, cause);
+                return AjaxResult.error("商品服务,根据SKU查询商品失败");
+            }
         };
     }
 }

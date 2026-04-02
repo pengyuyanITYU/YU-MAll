@@ -1,6 +1,6 @@
 package com.yu.item.consumer;
 
-import com.yu.item.domain.dto.OrderDetailDTO;
+import com.yu.api.dto.OrderDetailDTO;
 import com.yu.item.service.IItemService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

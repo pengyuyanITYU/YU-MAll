@@ -1,12 +1,10 @@
 package com.yu.api.dto;
 
-
 import com.yu.api.enums.OrderStatus;
 import com.yu.api.enums.PayType;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.experimental.Accessors;
-
-import javax.validation.constraints.NotNull;
 
 @Data
 @Accessors(chain = true)

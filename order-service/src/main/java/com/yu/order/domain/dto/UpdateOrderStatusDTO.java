@@ -2,9 +2,8 @@ package com.yu.order.domain.dto;
 
 import com.yu.order.domain.enums.OrderStatus;
 import com.yu.order.domain.enums.PayType;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-
-import javax.validation.constraints.NotNull;
 
 @Data
 public class UpdateOrderStatusDTO {

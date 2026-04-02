@@ -1,9 +1,9 @@
 package com.yu.member.domain.po;
 
 import com.baomidou.mybatisplus.annotation.*;
+import jakarta.validation.constraints.Digits;
 import lombok.Data;
 
-import javax.validation.constraints.Digits;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 

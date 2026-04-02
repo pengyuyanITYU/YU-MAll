@@ -3,12 +3,12 @@ package com.yu.item.domain.dto;
 import com.yu.item.domain.po.SpecTemplate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import java.util.List;
 
 @Data
@@ -29,7 +29,7 @@ public class ItemDTO {
     @ApiModelProperty(value = "商品主图", required = true)
     private String image;
 
-    @ApiModelProperty(value = "商品状态：1上架 2下架")
+    @ApiModelProperty(value = "商品状态：1上架，2下架")
     private Integer status;
 
     @NotBlank(message = "商品分类不能为空")
@@ -41,23 +41,23 @@ public class ItemDTO {
     private String brand;
 
     @NotNull(message = "商品价格不能为空")
-    @Min(value = 0, message = "价格不能小于0")
+    @Min(value = 0, message = "商品价格不能小于0")
     @ApiModelProperty(value = "商品价格(分)", required = true)
     private Long price;
 
     @ApiModelProperty(value = "原价(分)")
     private Integer originalPrice;
 
-    @ApiModelProperty(value = "总库存")
+    @ApiModelProperty(value = "库存")
     private Integer stock;
 
     @ApiModelProperty(value = "商品标签")
     private String tags;
 
-    @ApiModelProperty(value = "详情HTML")
+    @ApiModelProperty(value = "商品详情HTML")
     private String detailHtml;
 
-    @ApiModelProperty(value = "详情视频URL")
+    @ApiModelProperty(value = "商品视频URL")
     private String videoUrl;
 
     @NotEmpty(message = "轮播图不能为空")

@@ -2,18 +2,16 @@ package com.yu.user.domain.dto;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import org.springframework.web.multipart.MultipartFile;
 
-import javax.validation.constraints.NotNull;
-import java.io.File;
 import java.io.Serializable;
 
 @Data
 @ApiModel("用户注册表单")
 public class RegisterFormDTO implements Serializable {
 
-    @ApiModelProperty(name="用户名", required = true)
+    @ApiModelProperty(name = "用户名", required = true)
     @NotNull(message = "用户名不能为空")
     private String username;
 
@@ -31,6 +29,4 @@ public class RegisterFormDTO implements Serializable {
     @ApiModelProperty(name = "昵称", required = true)
     @NotNull(message = "昵称不能为空")
     private String nickName;
-
-
 }

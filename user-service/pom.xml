@@ -12,61 +12,46 @@
     <artifactId>user-service</artifactId>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <dependencies>
 
-        <!--common-->
+        
         <dependency>
             <groupId>com.yu</groupId>
             <artifactId>yu-common</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
 
-        <!--API-->
+        
         <dependency>
             <groupId>com.yu</groupId>
             <artifactId>yu-api</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
 
-        <!--消息发送-->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-amqp</artifactId>
-        </dependency>
-
-        <!--统一配置管理-->
+        
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
 
-        <!--读取bootstrap文件-->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-bootstrap</artifactId>
-        </dependency>
-
-        <!--seata-->
+        
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-seata</artifactId>
         </dependency>
 
-        <!--数据库-->
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-        </dependency>
-
-       <!-- X-File-Storage -->
+        
         <dependency>
             <groupId>org.dromara.x-file-storage</groupId>
             <artifactId>x-file-storage-spring</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
         </dependency>
 
         <dependency>
@@ -75,6 +60,25 @@
         </dependency>
 
 
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-rsa</artifactId>
+            <version>1.1.5</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework.security</groupId>
+                    <artifactId>spring-security-crypto</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <finalName>${project.artifactId}</finalName>
@@ -86,3 +90,7 @@
         </plugins>
     </build>
 </project>
+
+
+
+

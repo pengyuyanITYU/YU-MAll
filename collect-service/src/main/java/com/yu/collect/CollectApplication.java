@@ -3,7 +3,7 @@ package com.yu.collect;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.yu")
 public class CollectApplication {
 
     public static void main(String[] args) {

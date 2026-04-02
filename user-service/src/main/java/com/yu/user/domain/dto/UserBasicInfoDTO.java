@@ -1,23 +1,17 @@
 package com.yu.user.domain.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
-import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import net.sf.cglib.core.Local;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import javax.validation.Valid;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.NotNull;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Data
-@ApiModel("用户信息")
+@ApiModel("用户基础信息")
 public class UserBasicInfoDTO {
 
     @ApiModelProperty("昵称")
@@ -36,12 +30,11 @@ public class UserBasicInfoDTO {
     private String email;
 
     @ApiModelProperty("性别")
-    @Max(value = 1, message = "性别只能是一位数字")
+    @Max(value = 1, message = "性别仅支持 0 或 1")
     private Integer gender;
 
     @ApiModelProperty("生日")
     @JsonFormat(pattern = "yyyy/MM/dd")
     @DateTimeFormat(pattern = "yyyy/MM/dd")
     private LocalDate birthday;
-
 }

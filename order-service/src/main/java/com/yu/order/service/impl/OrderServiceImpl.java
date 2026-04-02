@@ -26,6 +26,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -62,6 +63,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             orderVO.setPayTime(order.getPayTime());
             orderVO.setConsignTime(order.getConsignTime());
             orderVO.setEndTime(order.getEndTime());
+
             String receiverContact = order.getReceiverContact();
             String receiverMobile = order.getReceiverMobile();
             String receiverAddress = order.getReceiverAddress();
@@ -90,39 +92,46 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @GlobalTransactional(rollbackFor = Exception.class)
     public boolean addOrder(OrderFormDTO orderFormDTO) {
         Long userId = UserContext.getUser();
-        if(userId == null){
+        if (userId == null) {
             throw new RuntimeException("用户未登录,请检查登录信息");
         }
+
         AjaxResult<Address> addressData = addressClient.getAddressById(orderFormDTO.getAddressId());
-        Address address = addressData.getData();
-        if(address == null){
+        if (addressData == null || !addressData.isSuccess() || addressData.getData() == null) {
             throw new RuntimeException("收货地址不存在");
         }
+        Address address = addressData.getData();
+
         String detailReceiverAddress = address.getProvince() + address.getCity() + address.getTown() + address.getStreet();
         Order order = new Order();
         order.setConsignTime(LocalDateTime.now().plusDays(1))
-             .setUserId(userId)
-              .setPaymentType(orderFormDTO.getPaymentType())
-             .setCloseTime(LocalDateTime.now().plusMinutes(30L))
-             .setStatus(OrderStatus.UNPAID.getValue())
-             .setAddressId(orderFormDTO.getAddressId())
-             .setReceiverContact(address.getContact())
-             .setReceiverMobile(address.getMobile())
-             .setReceiverAddress(detailReceiverAddress)
-             .setTotalFee(orderFormDTO.getTotalFee());
+                .setUserId(userId)
+                .setPaymentType(orderFormDTO.getPaymentType())
+                .setCloseTime(LocalDateTime.now().plusMinutes(30L))
+                .setStatus(OrderStatus.UNPAID.getValue())
+                .setAddressId(orderFormDTO.getAddressId())
+                .setReceiverContact(address.getContact())
+                .setReceiverMobile(address.getMobile())
+                .setReceiverAddress(detailReceiverAddress)
+                .setTotalFee(orderFormDTO.getTotalFee());
+
         boolean save = save(order);
-        if(!save){
+        if (!save || order.getId() == null) {
             log.error("订单保存失败");
+            throw new RuntimeException("订单保存失败");
         }
+
         boolean result = orderDetailService.addOrderDetails(orderFormDTO.getDetails(), order.getId());
+        if (!result) {
+            log.error("保存订单明细失败, orderId={}", order.getId());
+            throw new RuntimeException("保存订单明细失败");
+        }
+
         String message = order.getId().toString();
-
-
-        rabbitTemplate.convertAndSend("order-service.direct", "order-cancel",message, new MessagePostProcessor() {
+        rabbitTemplate.convertAndSend("order-service.direct", "order-cancel", message, new MessagePostProcessor() {
             @Override
             public Message postProcessMessage(Message message) throws AmqpException {
-                message.getMessageProperties()
-                        .setDelay(60000);
+                message.getMessageProperties().setDelayLong(60000L);
                 message.getMessageProperties().setExpiration("10000");
                 return message;
             }
@@ -130,15 +139,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         rabbitTemplate.convertAndSend("order-service.direct", "order-confirm", message, new MessagePostProcessor() {
             @Override
             public Message postProcessMessage(Message message) throws AmqpException {
-                message.getMessageProperties()
-                        .setDelay(60000);
-                        message.getMessageProperties().setExpiration("10000");
+                message.getMessageProperties().setDelayLong(60000L);
+                message.getMessageProperties().setExpiration("10000");
                 return message;
             }
         });
 
-
-        return result;
+        return true;
     }
 
     @Override
@@ -153,7 +160,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         removeByIds(ids);
         orderDetailService.deleteByOrderIds(ids);
     }
-
 
     @Override
     public OrderVO getByOrderId(Long id) {
@@ -176,13 +182,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         orderVO.setCreateTime(order.getCreateTime());
         orderVO.setCloseTime(order.getCloseTime());
         orderVO.setId(order.getId());
-        // 安全访问地址信息
         if (address != null && address.isSuccess() && address.getData() != null) {
             orderVO.setReceiverContact(address.getData().getContact());
             orderVO.setReceiverMobile(address.getData().getMobile());
             orderVO.setReceiverAddress(address.getData().getStreet());
         } else {
-            // 回退到订单快照中的地址信息
             orderVO.setReceiverContact(order.getReceiverContact());
             orderVO.setReceiverMobile(order.getReceiverMobile());
             orderVO.setReceiverAddress(order.getReceiverAddress());
@@ -193,21 +197,22 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
     @Override
     public boolean cancelOrder(Long id) {
-        boolean update = lambdaUpdate().eq(Order::getId, id).set(Order::getStatus, OrderStatus.CANCELED.getValue()).set(Order::getCloseTime, LocalDateTime.now()).set(Order::getUpdateTime, LocalDateTime.now()).update();
-        return update;
-
+        return lambdaUpdate().eq(Order::getId, id)
+                .set(Order::getStatus, OrderStatus.CANCELED.getValue())
+                .set(Order::getCloseTime, LocalDateTime.now())
+                .set(Order::getUpdateTime, LocalDateTime.now())
+                .update();
     }
 
     @Override
     public void batchConsignOrders() {
-
         boolean update = lambdaUpdate()
                 .eq(Order::getStatus, OrderStatus.PAID)
                 .le(Order::getCreateTime, LocalDateTime.now())
                 .set(Order::getStatus, OrderStatus.SHIPPED)
                 .set(Order::getConsignTime, LocalDateTime.now())
                 .update();
-        if (!update){
+        if (!update) {
             log.info("订单暂不满足发货条件（可能状态不是PAID或支付未满24小时）");
         }
     }
@@ -220,20 +225,19 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .set(Order::getStatus, OrderStatus.SUCCESS)
                 .set(Order::getConsignTime, LocalDateTime.now())
                 .update();
-        if (!update){
-            log.info("订单暂不满足发货条件（可能状态不是PAID或支付未满24小时）");
+        if (!update) {
+            log.info("订单暂不满足确认条件（可能状态不是SHIPPED或未满足时间条件）");
         }
     }
 
     @Override
     public boolean confirmOrder(Long id) {
-        boolean update = lambdaUpdate().eq(Order::getId, id)
+        return lambdaUpdate().eq(Order::getId, id)
                 .set(Order::getStatus, OrderStatus.SUCCESS.getValue())
                 .set(Order::getUpdateTime, LocalDateTime.now())
                 .set(Order::getEndTime, LocalDateTime.now())
                 .set(Order::getCloseTime, LocalDateTime.now())
                 .update();
-        return update;
     }
 
     @Override
@@ -242,24 +246,24 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         OrderStatus status = updateOrderStatusDTO.getStatus();
         Long id = updateOrderStatusDTO.getId();
         PayType paymentType = updateOrderStatusDTO.getPaymentType();
-        if(id == null){
+        if (id == null) {
             log.error("订单id不能为空");
             throw new RuntimeException("订单id不能为空");
         }
-        if(updateOrderStatusDTO.getPaymentType() == null){
+        if (paymentType == null) {
             log.error("订单支付方式不能为空");
             throw new RuntimeException("订单支付方式不能为空");
         }
-        if(status == null){
+        if (status == null) {
             log.error("订单状态不能为空");
             throw new RuntimeException("订单状态不能为空");
         }
         boolean update = false;
-        if(status == OrderStatus.PAID){
+        if (status == OrderStatus.PAID) {
             update = lambdaUpdate().eq(Order::getId, id)
                     .set(Order::getStatus, status)
                     .set(Order::getPayTime, LocalDateTime.now())
-                    .set(Order::getPaymentType,paymentType)
+                    .set(Order::getPaymentType, paymentType)
                     .set(Order::getUpdateTime, LocalDateTime.now())
                     .update();
         }
@@ -269,7 +273,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Override
     public void updateAllPayOrderStatus() {
         Long userId = UserContext.getUser();
-        if(userId == null){
+        if (userId == null) {
             log.error("用户未登录,请检查登录信息");
             throw new RuntimeException("用户未登录,请检查登录信息");
         }
@@ -279,10 +283,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .set(Order::getUpdateTime, LocalDateTime.now())
                 .set(Order::getConsignTime, LocalDateTime.now())
                 .update();
-        if(!update){
+        if (!update) {
             log.error("更新订单状态失败");
             throw new RuntimeException("更新订单状态失败");
         }
-
     }
 }

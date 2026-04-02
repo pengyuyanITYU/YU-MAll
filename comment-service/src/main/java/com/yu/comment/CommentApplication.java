@@ -6,7 +6,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.yu")
 @MapperScan("com.yu.comment.mapper")
 @EnableFeignClients(basePackages = "com.yu.api.client")
 public class CommentApplication {

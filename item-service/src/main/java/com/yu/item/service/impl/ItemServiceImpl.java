@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.yu.api.dto.OrderDetailDTO;
 import com.yu.common.constant.HttpStatus;
 import com.yu.common.domain.page.TableDataInfo;
 import com.yu.common.exception.BusinessException;
@@ -13,7 +14,6 @@ import com.yu.common.utils.BeanUtils;
 import com.yu.common.utils.CollUtils;
 import com.yu.item.domain.dto.ItemDTO;
 import com.yu.item.domain.dto.ItemSkuDTO;
-import com.yu.item.domain.dto.OrderDetailDTO;
 import com.yu.item.domain.po.Item;
 import com.yu.item.domain.po.ItemDetail;
 import com.yu.item.domain.po.ItemSku;
@@ -211,6 +211,16 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         ItemDetail itemDetail = itemDetailMapper.selectOne(new LambdaQueryWrapper<ItemDetail>().eq(ItemDetail::getItemId, id));
         List<ItemSku> skuList = itemSkuMapper.selectList(new LambdaQueryWrapper<ItemSku>().eq(ItemSku::getItemId, id));
         return convertDetail(item, itemDetail, skuList);
+    }
+
+    @Override
+    public ItemDetailVO getItemBySkuId(Long skuId) {
+        ItemSku sku = itemSkuMapper.selectById(skuId);
+        if (sku == null) {
+            return null;
+        }
+        Long itemId = sku.getItemId();
+        return getItemById(itemId);
     }
 
     @Override

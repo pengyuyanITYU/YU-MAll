@@ -41,4 +41,11 @@ public class ItemController {
         return AjaxResult.success(itemService.getItemByIds(ids));
     }
 
+    @GetMapping("/sku/{skuId}")
+    @ApiOperation("根据SKU ID查询商品详情")
+    public AjaxResult<ItemDetailVO> getItemBySkuId(@PathVariable Long skuId) {
+        log.info("开始执行根据SKU查询商品详情, skuId={}", skuId);
+        return AjaxResult.success(itemService.getItemBySkuId(skuId));
+    }
+
 }

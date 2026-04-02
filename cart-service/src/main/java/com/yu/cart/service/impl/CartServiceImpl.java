@@ -13,7 +13,6 @@ import com.yu.common.domain.AjaxResult;
 import com.yu.common.utils.UserContext;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import javassist.tools.rmi.ObjectNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -55,13 +54,16 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements IC
         if (cartFormDTO.getName() == null) {
             cartFormDTO.setName(item.getName());
         }
+        // 处理 spec 字段，确保存储为有效的 JSON 格式
+        String specJson = normalizeSpecToJson(cartFormDTO.getSpec());
+        
         Cart cart = new Cart();
         if(userId != null){
             cart = new Cart()
                     .setItemId(cartFormDTO.getItemId())
                     .setNum(cartFormDTO.getNum())
                     .setImage(cartFormDTO.getImage())
-                    .setSpec(cartFormDTO.getSpec())
+                    .setSpec(specJson)
                     .setPrice(cartFormDTO.getPrice())
                     .setName(cartFormDTO.getName())
                     .setUserId(userId);
@@ -86,5 +88,23 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements IC
             return cartVO;
         }).collect(Collectors.toList());
         return carts;
+    }
+
+    /**
+     * 将 spec 规范化为 JSON 格式
+     * 如果 spec 已经是有效的 JSON 对象，直接返回
+     * 如果 spec 是纯文本（如 "925 silver"），包装为 {"规格": "925 silver"}
+     */
+    private String normalizeSpecToJson(String spec) {
+        if (spec == null || spec.isBlank()) {
+            return spec;
+        }
+        String trimmed = spec.trim();
+        // 检查是否已经是有效的 JSON 对象
+        if (JSONUtil.isTypeJSON(trimmed) && trimmed.startsWith("{")) {
+            return trimmed;
+        }
+        // 纯文本，包装为 JSON 格式
+        return JSONUtil.createObj().set("规格", trimmed).toString();
     }
 }

@@ -8,7 +8,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @MapperScan("com.yu.cart.mapper")
 @EnableFeignClients(basePackages = "com.yu.api.client")
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.yu")
 public class CartApplication {
     public static void main(String[] args) {
         SpringApplication.run(CartApplication.class, args);

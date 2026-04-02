@@ -10,10 +10,12 @@ application-local.yml
 tmp
 logs/
 *.log
+application-local.yaml
 .trae/
 bugExperience/
 *.prefs/
 *.classpath
+img/
 .sisyphus/
 *.factorypath/
 .project/

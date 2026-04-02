@@ -6,7 +6,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 
 
 @EnableFeignClients(basePackages = "com.yu.api.client")
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.yu")
 public class MemberApplication {
 
     public static void main(String[] args) {

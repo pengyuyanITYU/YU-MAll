@@ -12,14 +12,12 @@
     <artifactId>order-service</artifactId>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
 
     <dependencies>
-        <!--common-->
+        
         <dependency>
             <groupId>com.yu</groupId>
             <artifactId>yu-common</artifactId>
@@ -27,58 +25,51 @@
         </dependency>
         <dependency>
             <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-boot-starter</artifactId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
         </dependency>
-        <!--Api-->
+        
         <dependency>
             <groupId>com.yu</groupId>
             <artifactId>yu-api</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
-        <!--统一配置管理-->
+        
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
-        <!--读取bootstrap文件-->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-bootstrap</artifactId>
-        </dependency>
-        <!--amqp-->
+        
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
-        <!--seata-->
+        
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-seata</artifactId>
         </dependency>
-        <!--web-->
+        
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-        <!--数据库-->
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-        </dependency>
-
-        <!-- ShedLock 核心包 -->
+        
         <dependency>
             <groupId>net.javacrumbs.shedlock</groupId>
             <artifactId>shedlock-spring</artifactId>
             <version>4.14.0</version>
         </dependency>
-        <!-- ShedLock JDBC 提供者 (使用数据库做锁) -->
+        
         <dependency>
             <groupId>net.javacrumbs.shedlock</groupId>
             <artifactId>shedlock-provider-jdbc-template</artifactId>
             <version>4.14.0</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+        </dependency>
 
     </dependencies>
     <build>
@@ -91,3 +82,6 @@
         </plugins>
     </build>
 </project>
+
+
+

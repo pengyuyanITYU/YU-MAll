@@ -3,9 +3,9 @@ package com.yu.user.domain.dto;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
-import javax.validation.constraints.NotNull;
 
 @Data
 @ApiModel("扣减用户余额")

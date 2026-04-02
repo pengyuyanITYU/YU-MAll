@@ -2,19 +2,18 @@ package com.yu.order.domain.dto;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-import javax.validation.constraints.*;
 import java.io.Serializable;
 import java.util.List;
 
-/**
- * <p>
- * 用户发表评价 DTO
- * </p>
- */
 @Data
-@ApiModel(value = "CommentDTO", description = "新增评价表单")
+@ApiModel(value = "CommentDTO", description = "新增评论表单")
 public class CommentDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -40,9 +39,9 @@ public class CommentDTO implements Serializable {
     @Max(value = 5, message = "评分最高为5分")
     private Integer rating;
 
-    @ApiModelProperty(value = "评价内容", required = true, example = "东西很好，物流很快！")
-    @NotBlank(message = "评价内容不能为空")
-    @Size(max = 500, message = "评价内容不能超过500字")
+    @ApiModelProperty(value = "评论内容", required = true, example = "东西很好，物流很快")
+    @NotBlank(message = "评论内容不能为空")
+    @Size(max = 500, message = "评论内容不能超过500字")
     private String content;
 
     @ApiModelProperty(value = "图片列表(URL数组)")
@@ -52,7 +51,7 @@ public class CommentDTO implements Serializable {
     @ApiModelProperty(value = "是否匿名", example = "false")
     private Boolean isAnonymous;
 
-    @ApiModelProperty(value = "用户名")
+    @ApiModelProperty(value = "用户昵称")
     private String userNickname;
 
     @ApiModelProperty(value = "用户头像")

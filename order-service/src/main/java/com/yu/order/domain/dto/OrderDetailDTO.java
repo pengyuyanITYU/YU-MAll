@@ -4,11 +4,11 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 import java.util.Map;
 
 @ApiModel(description = "订单明细条目(下单参数)")

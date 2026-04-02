@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
-@TableName("cart")
+@TableName(value = "cart", autoResultMap = true)
 public class Cart implements Serializable {
 
     private static final long serialVersionUID = 1L;

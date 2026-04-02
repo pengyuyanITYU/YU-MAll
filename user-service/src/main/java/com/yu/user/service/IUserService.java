@@ -8,7 +8,7 @@ import com.yu.user.domain.vo.UserLoginVO;
 import com.yu.user.domain.vo.UserRegisterVO;
 import com.yu.user.domain.vo.UserVO;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 public interface IUserService extends IService<User> {
     UserLoginVO login(LoginFormDTO loginFormDTO);
@@ -25,3 +25,4 @@ public interface IUserService extends IService<User> {
 
     UserVO getUserInfo();
 }
+

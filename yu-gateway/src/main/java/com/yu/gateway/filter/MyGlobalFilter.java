@@ -50,6 +50,10 @@ public class MyGlobalFilter implements GlobalFilter, Ordered {
         String token = null;
         if(!CollUtil.isEmpty(list)){
             token = list.get(0);
+            // 剥离 Bearer 前缀
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
         }
         Long userId = null;
         try{

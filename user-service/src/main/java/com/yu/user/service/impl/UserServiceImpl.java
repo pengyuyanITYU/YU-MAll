@@ -160,7 +160,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
                 throw new RuntimeException("用户被冻结");
             }
             String pw = DigestUtils.md5DigestAsHex(deductLocalMoneyDTO.getPayPassword().getBytes());
-            if(!BCrypt.checkpw(pw, user.getPassword())){
+            if(!BCrypt.checkpw(pw, user.getPayPassword())){
                 log.error("支付密码错误");
                 throw new RuntimeException("支付密码错误");
             }
@@ -239,7 +239,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             }
         }
         String pw = DigestUtils.md5DigestAsHex(passwordDTO.getOldPassword().getBytes());
-        if(!pw.equals(one.getPassword())){
+        if(!BCrypt.checkpw(pw, one.getPassword())){
             log.warn("旧密码错误");
             throw new RuntimeException("旧密码错误");
         }
@@ -248,8 +248,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             throw new RuntimeException("密码不一致");
         }
         String newPw = DigestUtils.md5DigestAsHex(passwordDTO.getConfirmPassword().getBytes());
+        String encodedPw = BCrypt.hashpw(newPw, BCrypt.gensalt());
         boolean update = lambdaUpdate().eq(User::getId, userId)
-                .set(User::getPassword, newPw)
+                .set(User::getPassword, encodedPw)
+                .set(User::getPayPassword, encodedPw)
                 .update();
         return update;
     }

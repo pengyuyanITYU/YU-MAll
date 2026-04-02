@@ -5,6 +5,7 @@ import cn.hutool.json.JSONUtil;
 import com.alibaba.cloud.nacos.NacosConfigManager;
 import com.alibaba.nacos.api.config.listener.Listener;
 import com.alibaba.nacos.api.exception.NacosException;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.route.RouteDefinition;
@@ -12,7 +13,6 @@ import org.springframework.cloud.gateway.route.RouteDefinitionWriter;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
-import javax.annotation.PostConstruct;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;

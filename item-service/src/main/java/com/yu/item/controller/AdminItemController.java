@@ -13,14 +13,12 @@ import com.yu.item.domain.vo.ItemDetailVO;
 import com.yu.item.service.IItemService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
 @RestController
@@ -48,35 +46,30 @@ public class AdminItemController {
 
     @GetMapping("/{id}")
     @ApiOperation("查询商品详情")
-    @Cacheable(cacheNames = "item", key = "'id:' + #id")
     public AjaxResult<ItemDetailVO> getItemById(@PathVariable Long id) {
         return AjaxResult.success(itemService.getItemById(id));
     }
 
     @GetMapping("/batch")
     @ApiOperation("批量查询商品详情")
-    @Cacheable(cacheNames = "item", key = "'list:' + #ids")
     public AjaxResult<List<ItemDetailVO>> getItemByIds(@RequestParam("ids") List<Long> ids) {
         return AjaxResult.success(itemService.getItemByIds(ids));
     }
 
     @DeleteMapping("/{id}")
     @ApiOperation("删除商品")
-    @CacheEvict(cacheNames = "item", allEntries = true)
     public AjaxResult<Void> deleteById(@PathVariable Long id) {
         return AjaxResult.toAjax(itemService.removeById(id));
     }
 
     @DeleteMapping
     @ApiOperation("批量删除商品")
-    @CacheEvict(cacheNames = "item", allEntries = true)
     public AjaxResult<Void> deleteByIds(@RequestParam("ids") List<Long> ids) {
         return AjaxResult.toAjax(itemService.removeByIds(ids));
     }
 
     @PostMapping
     @ApiOperation("新增商品")
-    @CacheEvict(cacheNames = "item", allEntries = true)
     public AjaxResult<Void> add(@Validated @RequestBody ItemDTO itemDTO) {
         itemService.add(itemDTO);
         return AjaxResult.success();
@@ -84,7 +77,6 @@ public class AdminItemController {
 
     @PutMapping
     @ApiOperation("修改商品")
-    @CacheEvict(cacheNames = "item", allEntries = true)
     public AjaxResult<Void> update(@Validated @RequestBody ItemDTO itemDTO) {
         itemService.updateItemById(itemDTO);
         return AjaxResult.success();
