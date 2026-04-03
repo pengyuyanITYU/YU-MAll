@@ -12,10 +12,12 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class MyGlobalFilterTest {
 
@@ -24,6 +26,7 @@ class MyGlobalFilterTest {
         AuthProperties authProperties = new AuthProperties();
         JwtProperties jwtProperties = new JwtProperties();
         JwtTool jwtTool = mock(JwtTool.class);
+        when(jwtTool.parseToken(isNull())).thenThrow(new RuntimeException("missing token"));
         MyGlobalFilter filter = new MyGlobalFilter(authProperties, jwtProperties, jwtTool);
         MockServerWebExchange exchange = MockServerWebExchange.from(
                 MockServerHttpRequest.get("/items/list").build()
@@ -31,7 +34,7 @@ class MyGlobalFilterTest {
         GatewayFilterChain chain = serverWebExchange -> Mono.empty();
 
         assertDoesNotThrow(() -> filter.filter(exchange, chain).block());
-        assertNull(exchange.getResponse().getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, exchange.getResponse().getStatusCode());
     }
 
     @Test
@@ -57,9 +60,28 @@ class MyGlobalFilterTest {
         authProperties.setExcludePaths(List.of("/users/login"));
         JwtProperties jwtProperties = new JwtProperties();
         JwtTool jwtTool = mock(JwtTool.class);
+        when(jwtTool.parseToken(isNull())).thenThrow(new RuntimeException("missing token"));
         MyGlobalFilter filter = new MyGlobalFilter(authProperties, jwtProperties, jwtTool);
         MockServerWebExchange exchange = MockServerWebExchange.from(
                 MockServerHttpRequest.get("/orders/1").build()
+        );
+        GatewayFilterChain chain = serverWebExchange -> Mono.empty();
+
+        filter.filter(exchange, chain).block();
+
+        assertEquals(HttpStatus.UNAUTHORIZED, exchange.getResponse().getStatusCode());
+    }
+
+    @Test
+    void shouldRejectAiPathWithoutToken() {
+        AuthProperties authProperties = new AuthProperties();
+        authProperties.setExcludePaths(List.of("/users/login", "/upload"));
+        JwtProperties jwtProperties = new JwtProperties();
+        JwtTool jwtTool = mock(JwtTool.class);
+        when(jwtTool.parseToken(isNull())).thenThrow(new RuntimeException("missing token"));
+        MyGlobalFilter filter = new MyGlobalFilter(authProperties, jwtProperties, jwtTool);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.post("/ai/chat").build()
         );
         GatewayFilterChain chain = serverWebExchange -> Mono.empty();
 

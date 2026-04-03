@@ -2,24 +2,28 @@ package com.yu.api.dto;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.Valid;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 
 @Data
-@ApiModel(value = "AiChatRequestDTO", description = "AI对话请求")
+@ApiModel(value = "AiChatRequestDTO", description = "AI chat request")
 public class AiChatRequestDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @ApiModelProperty(value = "用户消息", required = true)
-    @NotBlank(message = "消息不能为空")
+    @ApiModelProperty(value = "User message. Optional when attachments are provided")
     private String message;
 
-    @ApiModelProperty(value = "模型名称，可选")
+    @ApiModelProperty(value = "Model name")
     private String model;
 
-    @ApiModelProperty(value = "采样温度，可选")
+    @ApiModelProperty(value = "Sampling temperature")
     private Double temperature;
+
+    @Valid
+    @ApiModelProperty(value = "Attachments. Supports image/pdf/word/excel")
+    private List<AiChatAttachmentDTO> attachments;
 }

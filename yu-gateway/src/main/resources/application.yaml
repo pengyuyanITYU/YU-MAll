@@ -55,25 +55,28 @@ spring:
           predicates:
             - Path=/comments/**
 
+        - id: ai
+          uri: lb://yu-mall-ai-service
+          predicates:
+            - Path=/ai/**
 knife4j:
   enable: true
   gateway:
     enabled: true
     enable-openapi: true
     routes:
-      - name: 用户服务
+      - name: User Service
         service-name: user-center-service
         path: /user/**
         url: /v3/api-docs
-      - name: 订单服务
+      - name: Order Service
         service-name: order-service
         path: /order/**
         url: /v3/api-docs
-      - name: 管理后台服务
+      - name: Admin Service
         service-name: admin-service
         path: /admin/**
         url: /v3/api-docs
-
 seata:
   registry:
     type: nacos
@@ -104,7 +107,7 @@ yu:
     password: hmall123
     alias: hmall
   auth:
-    excludePaths: # 无需登录校验的路径
+    excludePaths: # paths excluded from auth
       - /search/**
       - /users/login
       - /items/**

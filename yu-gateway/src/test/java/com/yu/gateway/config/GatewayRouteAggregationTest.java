@@ -23,6 +23,13 @@ class GatewayRouteAggregationTest {
         assertTrue(yaml.contains("uri: lb://yu-mall-order-service"));
     }
 
+    @Test
+    void applicationYaml_shouldRouteAiPathsToAiService() throws IOException {
+        String yaml = readGatewayYaml();
+        assertTrue(yaml.contains("uri: lb://yu-mall-ai-service"));
+        assertTrue(yaml.contains("- Path=/ai/**"));
+    }
+
     private static String readGatewayYaml() throws IOException {
         return Files.readString(Path.of("src", "main", "resources", "application.yaml"));
     }

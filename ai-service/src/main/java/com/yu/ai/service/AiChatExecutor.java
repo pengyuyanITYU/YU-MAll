@@ -1,6 +1,10 @@
 package com.yu.ai.service;
 
+import com.yu.ai.service.impl.AiChatExecutionRequest;
+import org.springframework.http.codec.ServerSentEvent;
+import reactor.core.publisher.Flux;
+
 public interface AiChatExecutor {
 
-    String chat(String message, String model, Double temperature);
+    Flux<ServerSentEvent<String>> chat(AiChatExecutionRequest request);
 }

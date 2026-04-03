@@ -39,10 +39,10 @@ public class MyGlobalFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        log.debug("进入全局过滤器MyGlobalFilter");
+        log.debug("Enter MyGlobalFilter");
         ServerHttpRequest request = exchange.getRequest();
         if(isExcludePath(request.getPath().value())){
-                log.info("无需校验,放行");
+                log.info("Skip auth for excluded path");
                 return chain.filter(exchange);
             }
         HttpHeaders headers = request.getHeaders();
@@ -50,7 +50,7 @@ public class MyGlobalFilter implements GlobalFilter, Ordered {
         String token = null;
         if(!CollUtil.isEmpty(list)){
             token = list.get(0);
-            // 剥离 Bearer 前缀
+            // Strip Bearer prefix
             if (token != null && token.startsWith("Bearer ")) {
                 token = token.substring(7);
             }
@@ -59,12 +59,12 @@ public class MyGlobalFilter implements GlobalFilter, Ordered {
         try{
             userId = jwtTool.parseToken(token);
         }catch(Exception e){
-            log.error("该令牌失效");
+            log.error("Token validation failed", e);
             ServerHttpResponse response = exchange.getResponse();
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return response.setComplete();
         }
-        log.info("登录用户{}",userId);
+        log.info("Authenticated user {}", userId);
         String userInfo = userId.toString();
         ServerWebExchange build = exchange.mutate().request(u -> u.header("user-info", userInfo)).build();
         return chain.filter(build);
@@ -72,6 +72,9 @@ public class MyGlobalFilter implements GlobalFilter, Ordered {
 
     private boolean isExcludePath(String path){
         List<String> excludePaths = authProperties.getExcludePaths();
+        if (CollUtil.isEmpty(excludePaths)) {
+            return false;
+        }
         for (String exclude : excludePaths) {
             if(antPathMatcher.match(exclude, path)){
                 return true;

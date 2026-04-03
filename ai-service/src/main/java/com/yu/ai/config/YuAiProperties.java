@@ -10,7 +10,7 @@ public class YuAiProperties {
     /**
      * 默认模型
      */
-    private String defaultModel = "gpt-4o-mini";
+    private String defaultModel = "qwen-plus";
 
     /**
      * 系统提示词

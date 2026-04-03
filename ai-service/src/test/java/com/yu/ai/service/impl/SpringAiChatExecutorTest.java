@@ -1,7 +1,9 @@
 package com.yu.ai.service.impl;
 
 import com.yu.ai.config.YuAiProperties;
-import com.yu.common.exception.BusinessException;
+import com.yu.ai.service.attachment.DocumentAttachmentContent;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -9,16 +11,27 @@ import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.util.MimeTypeUtils;
+import reactor.core.publisher.Flux;
+
+import java.net.URI;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SpringAiChatExecutorTest {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private ChatClient.Builder chatClientBuilder;
@@ -28,8 +41,27 @@ class SpringAiChatExecutorTest {
     @BeforeEach
     void setUp() {
         YuAiProperties yuAiProperties = new YuAiProperties();
-        yuAiProperties.setSystemPrompt("你是商城AI助手");
-        springAiChatExecutor = new SpringAiChatExecutor(chatClientBuilder, yuAiProperties);
+        yuAiProperties.setSystemPrompt("You are a mall AI assistant");
+        springAiChatExecutor = new SpringAiChatExecutor(chatClientBuilder, yuAiProperties, OBJECT_MAPPER, "test-api-key");
+    }
+
+    @Test
+    void buildUserMessage_shouldIncludePromptDocumentsAndImages() {
+        AiChatExecutionRequest request = new AiChatExecutionRequest(
+                "Summarize the key points",
+                "qwen-vl-plus",
+                0.2D,
+                List.of(new Media(MimeTypeUtils.IMAGE_PNG, URI.create("https://cdn.test/image.png"))),
+                List.of(new DocumentAttachmentContent("report.pdf", "application/pdf", "sales amount is 2000"))
+        );
+
+        UserMessage userMessage = SpringAiChatExecutor.buildUserMessage(request);
+
+        assertEquals(1, userMessage.getMedia().size());
+        assertEquals(MimeTypeUtils.IMAGE_PNG, userMessage.getMedia().get(0).getMimeType());
+        assertTrue(userMessage.getText().contains("Summarize the key points"));
+        assertTrue(userMessage.getText().contains("report.pdf"));
+        assertTrue(userMessage.getText().contains("sales amount is 2000"));
     }
 
     @Test
@@ -37,42 +69,91 @@ class SpringAiChatExecutorTest {
         when(chatClientBuilder.build()
                 .prompt()
                 .system(anyString())
-                .user(anyString())
+                .messages(anyList())
                 .options(any(OpenAiChatOptions.class))
-                .call()
-                .content()).thenReturn("  已完成  ");
+                .stream()
+                .content()).thenReturn(Flux.just("Hel", "lo"));
 
-        String reply = springAiChatExecutor.chat("你好", "gpt-4o-mini", 0.7);
+        List<ServerSentEvent<String>> events = springAiChatExecutor.chat(new AiChatExecutionRequest(
+                "hello",
+                "qwen3.5-plus",
+                0.7D,
+                List.of(),
+                List.of()
+        )).collectList().block();
 
-        assertEquals("已完成", reply);
+        assertEquals(4, events.size());
+        assertEquals("start", events.get(0).event());
+        assertEquals("delta", events.get(1).event());
+        assertEquals("delta", events.get(2).event());
+        assertEquals("end", events.get(3).event());
+        assertEquals("Hel", readJson(events.get(1).data()).get("content").asText());
+        assertEquals("Hello", readJson(events.get(3).data()).get("reply").asText());
     }
 
     @Test
-    void chat_shouldThrowBusinessException_whenReplyBlank() {
+    void chat_shouldEmitErrorEvent_whenReplyBlank() {
         when(chatClientBuilder.build()
                 .prompt()
                 .system(anyString())
-                .user(anyString())
+                .messages(anyList())
                 .options(any(OpenAiChatOptions.class))
-                .call()
-                .content()).thenReturn(" ");
+                .stream()
+                .content()).thenReturn(Flux.just(" "));
 
-        assertThrows(BusinessException.class, () -> springAiChatExecutor.chat("你好", "gpt-4o-mini", 0.7));
+        List<ServerSentEvent<String>> events = springAiChatExecutor.chat(new AiChatExecutionRequest(
+                "hello",
+                "qwen3.5-plus",
+                0.7D,
+                List.of(),
+                List.of()
+        )).collectList().block();
+
+        assertEquals(2, events.size());
+        assertEquals("start", events.get(0).event());
+        assertEquals("error", events.get(1).event());
+        assertEquals("AI response is empty", readJson(events.get(1).data()).get("message").asText());
     }
 
     @Test
-    void chat_shouldWrapFrameworkException_whenFrameworkCallFails() {
+    void chat_shouldEmitErrorEvent_whenFrameworkCallFails() {
         when(chatClientBuilder.build()
                 .prompt()
                 .system(anyString())
-                .user(anyString())
+                .messages(anyList())
                 .options(any(OpenAiChatOptions.class))
-                .call()
-                .content()).thenThrow(new IllegalStateException("boom"));
+                .stream()
+                .content()).thenReturn(Flux.error(new IllegalStateException("boom")));
 
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> springAiChatExecutor.chat("你好", "gpt-4o-mini", 0.7));
+        List<ServerSentEvent<String>> events = springAiChatExecutor.chat(
+                new AiChatExecutionRequest("hello", "qwen3.5-plus", 0.7D, List.of(), List.of())
+        ).collectList().block();
 
-        assertEquals("AI调用失败: boom", exception.getMessage());
+        assertEquals(2, events.size());
+        assertEquals("start", events.get(0).event());
+        assertEquals("error", events.get(1).event());
+        assertEquals("AI call failed: boom", readJson(events.get(1).data()).get("message").asText());
+    }
+
+    @Test
+    void chat_shouldEmitErrorEvent_whenApiKeyMissing() {
+        YuAiProperties yuAiProperties = new YuAiProperties();
+        SpringAiChatExecutor executor = new SpringAiChatExecutor(chatClientBuilder, yuAiProperties, OBJECT_MAPPER, "");
+
+        List<ServerSentEvent<String>> events = executor.chat(
+                new AiChatExecutionRequest("hello", "qwen3.5-plus", 0.7D, List.of(), List.of())
+        ).collectList().block();
+
+        assertEquals(1, events.size());
+        assertEquals("error", events.get(0).event());
+        assertEquals("YU_AI_API_KEY is not configured", readJson(events.get(0).data()).get("message").asText());
+    }
+
+    private JsonNode readJson(String json) {
+        try {
+            return OBJECT_MAPPER.readTree(json);
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
     }
 }

@@ -17,7 +17,12 @@ AITEST/
 .trae/
 .project
 myConfig/
+.factorypath
 bugExperience/
+*.prefs
+*.png
+img/
+nul
 *.prefs/
 *.classpath
 img/

@@ -15,18 +15,18 @@ spring:
         server-addr: 192.168.100.128:8848
   ai:
     openai:
-      base-url: ${YU_AI_BASE_URL:https://api.openai.com}
-      api-key: ${YU_AI_API_KEY:sk-local-placeholder}
+      base-url: https://dashscope.aliyuncs.com/compatible-mode
+      api-key: ${ALI_API_KEY}
       chat:
         options:
-          model: ${YU_AI_MODEL:gpt-4o-mini}
-          temperature: ${YU_AI_TEMPERATURE:0.7}
+          model: qwen3.5-plus
+          temperature: 0.1
 
-yu:
-  ai:
-    default-model: ${YU_AI_MODEL:gpt-4o-mini}
-    default-temperature: ${YU_AI_TEMPERATURE:0.7}
-    system-prompt: ${YU_AI_SYSTEM_PROMPT:You are a helpful assistant.}
+#yu:
+#  ai:
+#    default-model: ${YU_AI_MODEL:gpt-4o-mini}
+#    default-temperature: ${YU_AI_TEMPERATURE:0.7}
+#    system-prompt: ${YU_AI_SYSTEM_PROMPT:You are a helpful assistant.}
 
 logging:
   level:
