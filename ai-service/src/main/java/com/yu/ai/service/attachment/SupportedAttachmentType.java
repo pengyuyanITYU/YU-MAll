@@ -22,7 +22,7 @@ public enum SupportedAttachmentType {
     private static final String DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     private static final String XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
-    public static SupportedAttachmentType detect(DownloadedAttachment attachment) {
+    public static SupportedAttachmentType detect(AttachmentContentLoader.DownloadedAttachment attachment) {
         String mimeType = normalizeMimeType(attachment.contentType());
         String extension = resolveExtension(attachment.fileName(), attachment.url());
         if (StringUtils.hasText(mimeType) && !OCTET_STREAM.equals(mimeType)) {
@@ -54,7 +54,7 @@ public enum SupportedAttachmentType {
         throw new BadRequestException("Unsupported attachment type: " + resolveDisplayName(attachment.fileName(), attachment.url()));
     }
 
-    public static MimeType resolveImageMimeType(DownloadedAttachment attachment) {
+    public static MimeType resolveImageMimeType(AttachmentContentLoader.DownloadedAttachment attachment) {
         String mimeType = normalizeMimeType(attachment.contentType());
         if (StringUtils.hasText(mimeType) && mimeType.startsWith("image/")) {
             return MimeType.valueOf(mimeType);
@@ -67,7 +67,7 @@ public enum SupportedAttachmentType {
         };
     }
 
-    public static boolean isDocx(DownloadedAttachment attachment) {
+    public static boolean isDocx(AttachmentContentLoader.DownloadedAttachment attachment) {
         String mimeType = normalizeMimeType(attachment.contentType());
         return DOCX_MIME.equals(mimeType) || "docx".equals(resolveExtension(attachment.fileName(), attachment.url()));
     }

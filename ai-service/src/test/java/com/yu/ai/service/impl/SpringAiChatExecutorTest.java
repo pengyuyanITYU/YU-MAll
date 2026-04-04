@@ -1,9 +1,10 @@
 package com.yu.ai.service.impl;
 
-import com.yu.ai.config.YuAiProperties;
-import com.yu.ai.service.attachment.DocumentAttachmentContent;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.yu.ai.config.YuAiProperties;
+import com.yu.ai.service.AiChatExecutor;
+import com.yu.ai.service.attachment.AiAttachmentResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,12 +48,12 @@ class SpringAiChatExecutorTest {
 
     @Test
     void buildUserMessage_shouldIncludePromptDocumentsAndImages() {
-        AiChatExecutionRequest request = new AiChatExecutionRequest(
+        AiChatExecutor.ChatRequest request = new AiChatExecutor.ChatRequest(
                 "Summarize the key points",
                 "qwen-vl-plus",
                 0.2D,
                 List.of(new Media(MimeTypeUtils.IMAGE_PNG, URI.create("https://cdn.test/image.png"))),
-                List.of(new DocumentAttachmentContent("report.pdf", "application/pdf", "sales amount is 2000"))
+                List.of(new AiAttachmentResolver.DocumentAttachmentContent("report.pdf", "application/pdf", "sales amount is 2000"))
         );
 
         UserMessage userMessage = SpringAiChatExecutor.buildUserMessage(request);
@@ -74,7 +75,7 @@ class SpringAiChatExecutorTest {
                 .stream()
                 .content()).thenReturn(Flux.just("Hel", "lo"));
 
-        List<ServerSentEvent<String>> events = springAiChatExecutor.chat(new AiChatExecutionRequest(
+        List<ServerSentEvent<String>> events = springAiChatExecutor.chat(new AiChatExecutor.ChatRequest(
                 "hello",
                 "qwen3.5-plus",
                 0.7D,
@@ -101,7 +102,7 @@ class SpringAiChatExecutorTest {
                 .stream()
                 .content()).thenReturn(Flux.just(" "));
 
-        List<ServerSentEvent<String>> events = springAiChatExecutor.chat(new AiChatExecutionRequest(
+        List<ServerSentEvent<String>> events = springAiChatExecutor.chat(new AiChatExecutor.ChatRequest(
                 "hello",
                 "qwen3.5-plus",
                 0.7D,
@@ -126,7 +127,7 @@ class SpringAiChatExecutorTest {
                 .content()).thenReturn(Flux.error(new IllegalStateException("boom")));
 
         List<ServerSentEvent<String>> events = springAiChatExecutor.chat(
-                new AiChatExecutionRequest("hello", "qwen3.5-plus", 0.7D, List.of(), List.of())
+                new AiChatExecutor.ChatRequest("hello", "qwen3.5-plus", 0.7D, List.of(), List.of())
         ).collectList().block();
 
         assertEquals(2, events.size());
@@ -141,7 +142,7 @@ class SpringAiChatExecutorTest {
         SpringAiChatExecutor executor = new SpringAiChatExecutor(chatClientBuilder, yuAiProperties, OBJECT_MAPPER, "");
 
         List<ServerSentEvent<String>> events = executor.chat(
-                new AiChatExecutionRequest("hello", "qwen3.5-plus", 0.7D, List.of(), List.of())
+                new AiChatExecutor.ChatRequest("hello", "qwen3.5-plus", 0.7D, List.of(), List.of())
         ).collectList().block();
 
         assertEquals(1, events.size());

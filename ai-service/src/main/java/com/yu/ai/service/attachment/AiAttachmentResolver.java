@@ -34,7 +34,7 @@ public class AiAttachmentResolver {
             if (attachment == null || !StringUtils.hasText(attachment.getUrl())) {
                 throw new BadRequestException("Attachment url cannot be blank");
             }
-            DownloadedAttachment downloadedAttachment = attachmentContentLoader.load(attachment);
+            AttachmentContentLoader.DownloadedAttachment downloadedAttachment = attachmentContentLoader.load(attachment);
             SupportedAttachmentType attachmentType = SupportedAttachmentType.detect(downloadedAttachment);
             if (attachmentType == SupportedAttachmentType.IMAGE) {
                 imageMediaList.add(new Media(
@@ -50,6 +50,17 @@ public class AiAttachmentResolver {
             ));
         }
         return new ResolvedAttachments(imageMediaList, documentContents);
+    }
+
+    public record DocumentAttachmentContent(String fileName, String contentType, String content) {
+    }
+
+    public record ResolvedAttachments(List<Media> imageMediaList, List<DocumentAttachmentContent> documentContents) {
+
+        public ResolvedAttachments {
+            imageMediaList = imageMediaList == null ? List.of() : List.copyOf(imageMediaList);
+            documentContents = documentContents == null ? List.of() : List.copyOf(documentContents);
+        }
     }
 
     private static final class NamedByteArrayResource extends ByteArrayResource {

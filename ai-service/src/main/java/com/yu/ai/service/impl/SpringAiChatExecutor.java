@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yu.ai.config.YuAiProperties;
 import com.yu.ai.service.AiChatExecutor;
-import com.yu.ai.service.attachment.DocumentAttachmentContent;
+import com.yu.ai.service.attachment.AiAttachmentResolver;
 import com.yu.common.exception.BusinessException;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -42,7 +42,7 @@ public class SpringAiChatExecutor implements AiChatExecutor {
     }
 
     @Override
-    public Flux<ServerSentEvent<String>> chat(AiChatExecutionRequest request) {
+    public Flux<ServerSentEvent<String>> chat(AiChatExecutor.ChatRequest request) {
         if (!StringUtils.hasText(apiKey) || PLACEHOLDER_API_KEY.equals(apiKey)) {
             return Flux.just(buildErrorEvent("YU_AI_API_KEY is not configured"));
         }
@@ -84,7 +84,7 @@ public class SpringAiChatExecutor implements AiChatExecutor {
         }
     }
 
-    static UserMessage buildUserMessage(AiChatExecutionRequest request) {
+    static UserMessage buildUserMessage(AiChatExecutor.ChatRequest request) {
         String text = buildUserText(request);
         return UserMessage.builder()
                 .text(text)
@@ -92,7 +92,7 @@ public class SpringAiChatExecutor implements AiChatExecutor {
                 .build();
     }
 
-    private static String buildUserText(AiChatExecutionRequest request) {
+    private static String buildUserText(AiChatExecutor.ChatRequest request) {
         StringBuilder builder = new StringBuilder();
         if (StringUtils.hasText(request.message())) {
             builder.append(request.message().trim());
@@ -102,7 +102,7 @@ public class SpringAiChatExecutor implements AiChatExecutor {
                 builder.append("\n\n");
             }
             builder.append("Uploaded document contents:");
-            for (DocumentAttachmentContent documentContent : request.documentContents()) {
+            for (AiAttachmentResolver.DocumentAttachmentContent documentContent : request.documentContents()) {
                 builder.append("\n\n[Document] ")
                         .append(documentContent.fileName())
                         .append("\n")

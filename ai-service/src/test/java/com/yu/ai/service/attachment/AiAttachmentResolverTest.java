@@ -29,14 +29,14 @@ class AiAttachmentResolverTest {
     @Test
     void resolve_shouldConvertImageAttachmentToMedia() {
         AiChatAttachmentDTO attachmentDTO = buildAttachment("https://cdn.test/demo.png", "demo.png", "image/png");
-        when(attachmentContentLoader.load(attachmentDTO)).thenReturn(new DownloadedAttachment(
+        when(attachmentContentLoader.load(attachmentDTO)).thenReturn(new AttachmentContentLoader.DownloadedAttachment(
                 "https://cdn.test/demo.png",
                 "demo.png",
                 "image/png",
                 new byte[]{1, 2, 3}
         ));
 
-        ResolvedAttachments resolvedAttachments = aiAttachmentResolver.resolve(List.of(attachmentDTO));
+        AiAttachmentResolver.ResolvedAttachments resolvedAttachments = aiAttachmentResolver.resolve(List.of(attachmentDTO));
 
         assertEquals(1, resolvedAttachments.imageMediaList().size());
         Media media = resolvedAttachments.imageMediaList().get(0);
@@ -47,7 +47,7 @@ class AiAttachmentResolverTest {
     @Test
     void resolve_shouldExtractDocumentText() {
         AiChatAttachmentDTO attachmentDTO = buildAttachment("https://cdn.test/report.pdf", "report.pdf", "application/pdf");
-        DownloadedAttachment downloadedAttachment = new DownloadedAttachment(
+        AttachmentContentLoader.DownloadedAttachment downloadedAttachment = new AttachmentContentLoader.DownloadedAttachment(
                 "https://cdn.test/report.pdf",
                 "report.pdf",
                 "application/pdf",
@@ -56,7 +56,7 @@ class AiAttachmentResolverTest {
         when(attachmentContentLoader.load(attachmentDTO)).thenReturn(downloadedAttachment);
         when(documentContentExtractor.extract(SupportedAttachmentType.PDF, downloadedAttachment)).thenReturn("document text");
 
-        ResolvedAttachments resolvedAttachments = aiAttachmentResolver.resolve(List.of(attachmentDTO));
+        AiAttachmentResolver.ResolvedAttachments resolvedAttachments = aiAttachmentResolver.resolve(List.of(attachmentDTO));
 
         assertEquals(0, resolvedAttachments.imageMediaList().size());
         assertEquals(1, resolvedAttachments.documentContents().size());
@@ -67,7 +67,7 @@ class AiAttachmentResolverTest {
     @Test
     void resolve_shouldRejectUnsupportedAttachmentType() {
         AiChatAttachmentDTO attachmentDTO = buildAttachment("https://cdn.test/readme.txt", "readme.txt", "text/plain");
-        when(attachmentContentLoader.load(attachmentDTO)).thenReturn(new DownloadedAttachment(
+        when(attachmentContentLoader.load(attachmentDTO)).thenReturn(new AttachmentContentLoader.DownloadedAttachment(
                 "https://cdn.test/readme.txt",
                 "readme.txt",
                 "text/plain",

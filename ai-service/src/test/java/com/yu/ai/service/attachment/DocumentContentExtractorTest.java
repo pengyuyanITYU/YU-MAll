@@ -25,7 +25,7 @@ class DocumentContentExtractorTest {
         byte[] pdfBytes = createPdf("monthly report");
 
         String content = documentContentExtractor.extract(SupportedAttachmentType.PDF,
-                new DownloadedAttachment("https://cdn.test/report.pdf", "report.pdf", "application/pdf", pdfBytes));
+                new AttachmentContentLoader.DownloadedAttachment("https://cdn.test/report.pdf", "report.pdf", "application/pdf", pdfBytes));
 
         assertTrue(content.contains("monthly report"));
     }
@@ -35,7 +35,7 @@ class DocumentContentExtractorTest {
         byte[] docxBytes = createDocx("word content");
 
         String content = documentContentExtractor.extract(SupportedAttachmentType.WORD,
-                new DownloadedAttachment("https://cdn.test/report.docx", "report.docx",
+                new AttachmentContentLoader.DownloadedAttachment("https://cdn.test/report.docx", "report.docx",
                         "application/vnd.openxmlformats-officedocument.wordprocessingml.document", docxBytes));
 
         assertTrue(content.contains("word content"));
@@ -46,7 +46,7 @@ class DocumentContentExtractorTest {
         byte[] excelBytes = createXlsx();
 
         String content = documentContentExtractor.extract(SupportedAttachmentType.EXCEL,
-                new DownloadedAttachment("https://cdn.test/report.xlsx", "report.xlsx",
+                new AttachmentContentLoader.DownloadedAttachment("https://cdn.test/report.xlsx", "report.xlsx",
                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelBytes));
 
         assertTrue(content.contains("Sheet1"));

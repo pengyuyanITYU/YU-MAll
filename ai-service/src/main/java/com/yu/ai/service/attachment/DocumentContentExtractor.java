@@ -24,7 +24,7 @@ public class DocumentContentExtractor {
 
     static final int MAX_DOCUMENT_CHARS = 12000;
 
-    public String extract(SupportedAttachmentType attachmentType, DownloadedAttachment attachment) {
+    public String extract(SupportedAttachmentType attachmentType, AttachmentContentLoader.DownloadedAttachment attachment) {
         try {
             String content = switch (attachmentType) {
                 case PDF -> extractPdf(attachment.bytes());
@@ -56,7 +56,7 @@ public class DocumentContentExtractor {
         }
     }
 
-    private String extractWord(DownloadedAttachment attachment) throws Exception {
+    private String extractWord(AttachmentContentLoader.DownloadedAttachment attachment) throws Exception {
         try (ByteArrayInputStream inputStream = new ByteArrayInputStream(attachment.bytes())) {
             if (SupportedAttachmentType.isDocx(attachment)) {
                 try (XWPFDocument document = new XWPFDocument(inputStream);

@@ -3,8 +3,6 @@ package com.yu.ai.service.impl;
 import com.yu.ai.config.YuAiProperties;
 import com.yu.ai.service.AiChatExecutor;
 import com.yu.ai.service.attachment.AiAttachmentResolver;
-import com.yu.ai.service.attachment.DocumentAttachmentContent;
-import com.yu.ai.service.attachment.ResolvedAttachments;
 import com.yu.api.dto.AiChatAttachmentDTO;
 import com.yu.api.dto.AiChatRequestDTO;
 import com.yu.common.exception.BadRequestException;
@@ -55,9 +53,9 @@ class AiChatServiceImplTest {
         requestDTO.setAttachments(List.of(buildAttachment("https://cdn.test/demo.png", "demo.png", "image/png")));
 
         Media image = new Media(MimeTypeUtils.IMAGE_PNG, URI.create("https://cdn.test/demo.png"));
-        ResolvedAttachments resolvedAttachments = new ResolvedAttachments(
+        AiAttachmentResolver.ResolvedAttachments resolvedAttachments = new AiAttachmentResolver.ResolvedAttachments(
                 List.of(image),
-                List.of(new DocumentAttachmentContent("spec.pdf", "application/pdf", "order count is 12"))
+                List.of(new AiAttachmentResolver.DocumentAttachmentContent("spec.pdf", "application/pdf", "order count is 12"))
         );
         when(aiAttachmentResolver.resolve(requestDTO.getAttachments())).thenReturn(resolvedAttachments);
         when(aiChatExecutor.chat(argThat(request -> "Summarize these attachments".equals(request.message())
@@ -82,9 +80,9 @@ class AiChatServiceImplTest {
         requestDTO.setAttachments(List.of(buildAttachment("https://cdn.test/report.xlsx", "report.xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")));
 
-        ResolvedAttachments resolvedAttachments = new ResolvedAttachments(
+        AiAttachmentResolver.ResolvedAttachments resolvedAttachments = new AiAttachmentResolver.ResolvedAttachments(
                 List.of(),
-                List.of(new DocumentAttachmentContent("report.xlsx",
+                List.of(new AiAttachmentResolver.DocumentAttachmentContent("report.xlsx",
                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                         "sales 100"))
         );

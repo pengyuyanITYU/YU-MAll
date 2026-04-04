@@ -4,7 +4,6 @@ import com.yu.ai.config.YuAiProperties;
 import com.yu.ai.service.AiChatExecutor;
 import com.yu.ai.service.IAiChatService;
 import com.yu.ai.service.attachment.AiAttachmentResolver;
-import com.yu.ai.service.attachment.ResolvedAttachments;
 import com.yu.api.dto.AiChatRequestDTO;
 import com.yu.common.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
@@ -37,8 +36,8 @@ public class AiChatServiceImpl implements IAiChatService {
         Double temperature = requestDTO.getTemperature() == null
                 ? yuAiProperties.getDefaultTemperature()
                 : requestDTO.getTemperature();
-        ResolvedAttachments resolvedAttachments = aiAttachmentResolver.resolve(requestDTO.getAttachments());
-        return aiChatExecutor.chat(new AiChatExecutionRequest(
+        AiAttachmentResolver.ResolvedAttachments resolvedAttachments = aiAttachmentResolver.resolve(requestDTO.getAttachments());
+        return aiChatExecutor.chat(new AiChatExecutor.ChatRequest(
                 StringUtils.hasText(requestDTO.getMessage()) ? requestDTO.getMessage().trim() : "",
                 model,
                 temperature,
