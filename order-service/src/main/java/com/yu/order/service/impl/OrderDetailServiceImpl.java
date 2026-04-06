@@ -48,6 +48,7 @@ public class OrderDetailServiceImpl extends ServiceImpl<OrderDetailMapper, Order
             OrderDetailVO orderDetailVO = new OrderDetailVO();
             orderDetailVO.setId(orderDetail.getId());
             orderDetailVO.setItemId(orderDetail.getItemId());
+            orderDetailVO.setSkuId(orderDetail.getSkuId());
             orderDetailVO.setNum(orderDetail.getNum());
             orderDetailVO.setName(orderDetail.getName());
             orderDetailVO.setSpec(orderDetail.getSpec());
@@ -65,26 +66,25 @@ public class OrderDetailServiceImpl extends ServiceImpl<OrderDetailMapper, Order
         log.info("create order details orderId={}, size={}", orderId, orderDetailDTOList.size());
 
         List<OrderDetail> orderDetailList = orderDetailDTOList.stream().map(orderDetailDTO -> {
-            // 购物车存储的是商品ID(Item ID)，使用 getItemById 查询
             AjaxResult<ItemDetailVO> itemData = itemClient.getItemById(orderDetailDTO.getItemId());
             if (itemData == null || !itemData.isSuccess()) {
-                log.error("query item failed, skuId={}, code={}", orderDetailDTO.getItemId(), itemData != null ? itemData.getCode() : null);
+                log.error("query item failed, itemId={}, code={}", orderDetailDTO.getItemId(), itemData != null ? itemData.getCode() : null);
                 throw new RuntimeException("查询商品失败");
             }
             ItemDetailVO item = itemData.getData();
             if (item == null) {
-                log.error("item not found, skuId={}", orderDetailDTO.getItemId());
+                log.error("item not found, itemId={}", orderDetailDTO.getItemId());
                 throw new RuntimeException("商品不存在");
             }
-            OrderDetail orderDetail = new OrderDetail();
-            orderDetail.setOrderId(orderId)
+            return new OrderDetail()
+                    .setOrderId(orderId)
                     .setItemId(item.getId())
+                    .setSkuId(orderDetailDTO.getSkuId())
                     .setNum(orderDetailDTO.getNum())
                     .setName(item.getName())
                     .setSpec(orderDetailDTO.getSpecs())
                     .setImage(orderDetailDTO.getImage())
                     .setPrice(orderDetailDTO.getPrice());
-            return orderDetail;
         }).collect(Collectors.toList());
 
         boolean result = saveBatch(orderDetailList);
@@ -101,6 +101,7 @@ public class OrderDetailServiceImpl extends ServiceImpl<OrderDetailMapper, Order
         return orderDetailDTOList.stream()
                 .map(detail -> new com.yu.api.dto.OrderDetailDTO()
                         .setItemId(detail.getItemId())
+                        .setSkuId(detail.getSkuId())
                         .setNum(detail.getNum()))
                 .collect(Collectors.toList());
     }

@@ -30,6 +30,10 @@
             <el-icon><Goods /></el-icon>
             <span>商品管理</span>
           </el-menu-item>
+          <el-menu-item index="/shops">
+            <el-icon><Shop /></el-icon>
+            <span>店铺管理</span>
+          </el-menu-item>
           <el-menu-item index="/categories">
             <el-icon><Grid /></el-icon>
             <span>分类管理</span>
@@ -37,6 +41,10 @@
           <el-menu-item index="/orders">
             <el-icon><List /></el-icon>
             <span>订单管理</span>
+          </el-menu-item>
+          <el-menu-item index="/comments">
+            <el-icon><ChatLineSquare /></el-icon>
+            <span>评论审核</span>
           </el-menu-item>
         </el-menu>
       </el-aside>
@@ -61,6 +69,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { ChatLineSquare, Goods, Grid, List, Odometer, Shop, UserFilled } from '@element-plus/icons-vue';
 import { useAuthStore } from '@/stores/auth';
 
 const route = useRoute();

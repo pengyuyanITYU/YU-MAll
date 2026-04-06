@@ -20,6 +20,9 @@ public class OrderDetailDTO {
     @NotNull(message = "商品ID不能为空")
     private Long itemId;
 
+    @ApiModelProperty(value = "商品SKU ID")
+    private Long skuId;
+
     @ApiModelProperty(value = "购买数量", required = true)
     @NotNull(message = "购买数量不能为空")
     @Min(value = 1, message = "购买数量不能少于1")

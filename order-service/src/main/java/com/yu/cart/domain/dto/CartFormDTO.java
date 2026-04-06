@@ -20,6 +20,9 @@ public class CartFormDTO {
     @ApiModelProperty("商品规格")
     private String spec;
 
+    @ApiModelProperty("商品SKU ID")
+    private Long skuId;
+
     @ApiModelProperty("商品价格")
     private Long price;
 

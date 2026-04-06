@@ -35,6 +35,12 @@ public class OrderDetail implements Serializable {
     private Long itemId;
 
     /**
+     * 商品SKU ID
+     */
+    @TableField("sku_id")
+    private Long skuId;
+
+    /**
      * 购买数量
      */
     private Integer num;

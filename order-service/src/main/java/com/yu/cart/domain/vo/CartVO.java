@@ -18,6 +18,8 @@ public class CartVO {
     private String name;
     @ApiModelProperty("商品动态属性键值集")
     private String spec;
+    @ApiModelProperty("商品SKU ID")
+    private Long skuId;
     @ApiModelProperty("价格,单位：分")
     private Long price;
     @ApiModelProperty("商品图片")

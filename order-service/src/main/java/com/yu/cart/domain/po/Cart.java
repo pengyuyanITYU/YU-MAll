@@ -49,6 +49,12 @@ public class Cart implements Serializable {
     private String spec;
 
     /**
+     * 商品SKU ID
+     */
+    @TableField("item_sku_id")
+    private Long skuId;
+
+    /**
      * 价格,单位：分
      */
     private Long price;

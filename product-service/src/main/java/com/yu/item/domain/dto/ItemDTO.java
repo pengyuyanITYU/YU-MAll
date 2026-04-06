@@ -73,4 +73,8 @@ public class ItemDTO {
 
     @ApiModelProperty(value = "分类ID")
     private Long categoryId;
+
+    @NotNull(message = "所属店铺不能为空")
+    @ApiModelProperty(value = "所属店铺ID", required = true)
+    private Long shopId;
 }

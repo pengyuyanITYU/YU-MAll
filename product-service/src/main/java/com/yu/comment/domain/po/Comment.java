@@ -84,6 +84,11 @@ public class Comment implements Serializable {
     private Integer status;
 
     /**
+     * 驳回原因
+     */
+    private String rejectReason;
+
+    /**
      * 是否置顶(0:否 1:是)
      */
     private Boolean isTop;

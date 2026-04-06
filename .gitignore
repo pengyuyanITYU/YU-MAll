@@ -22,6 +22,10 @@ bugExperience/
 *.prefs
 *.png
 img/
+docs/
+.superpowers
+.没
+.m2-cache/
 nul
 *.prefs/
 *.classpath

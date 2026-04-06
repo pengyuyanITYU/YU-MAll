@@ -27,6 +27,10 @@ public class ItemDetailVO {
 
     private Integer sold;
 
+    private Integer commentCount;
+
+    private Integer positiveRate;
+
     private BigDecimal avgScore;
 
     private Integer status;
@@ -36,6 +40,20 @@ public class ItemDetailVO {
     private Long categoryId;
 
     private String brand;
+
+    private Long shopId;
+
+    private String shopName;
+
+    private Integer isSelf;
+
+    private String shippingType;
+
+    private Integer shippingFee;
+
+    private Integer freeShippingThreshold;
+
+    private String shippingDesc;
 
     private List<String> bannerImages;
 

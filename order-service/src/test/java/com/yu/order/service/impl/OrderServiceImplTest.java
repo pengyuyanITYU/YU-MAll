@@ -3,7 +3,9 @@ package com.yu.order.service.impl;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.yu.api.client.AddressClient;
+import com.yu.api.client.ItemClient;
 import com.yu.api.po.Address;
+import com.yu.api.vo.ItemDetailVO;
 import com.yu.common.domain.AjaxResult;
 import com.yu.common.utils.UserContext;
 import com.yu.order.domain.dto.OrderDetailDTO;
@@ -24,6 +26,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -47,6 +50,9 @@ class OrderServiceImplTest {
     private AddressClient addressClient;
 
     @Mock
+    private ItemClient itemClient;
+
+    @Mock
     private RabbitTemplate rabbitTemplate;
 
     @Mock
@@ -59,7 +65,7 @@ class OrderServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        orderService = spy(new OrderServiceImpl(addressClient, rabbitTemplate));
+        orderService = spy(new OrderServiceImpl(addressClient, itemClient, rabbitTemplate));
         ReflectionTestUtils.setField(orderService, "orderDetailService", orderDetailService);
     }
 
@@ -98,6 +104,7 @@ class OrderServiceImplTest {
     void addOrder_shouldThrow_whenSaveFails() {
         UserContext.setUser(37L);
         when(addressClient.getAddressById(100L)).thenReturn(AjaxResult.success(buildAddress()));
+        when(itemClient.getItemById(200L)).thenReturn(AjaxResult.success(buildItemDetail("FIXED", 800, 0, 10L)));
         doReturn(false).when(orderService).save(any(Order.class));
 
         RuntimeException ex = assertThrows(RuntimeException.class, () -> orderService.addOrder(buildOrderForm()));
@@ -110,6 +117,7 @@ class OrderServiceImplTest {
     void addOrder_shouldThrow_whenOrderDetailsSaveFails() {
         UserContext.setUser(37L);
         when(addressClient.getAddressById(100L)).thenReturn(AjaxResult.success(buildAddress()));
+        when(itemClient.getItemById(200L)).thenReturn(AjaxResult.success(buildItemDetail("FIXED", 800, 0, 10L)));
         doAnswer(invocation -> {
             Order order = invocation.getArgument(0);
             order.setId(99L);
@@ -122,6 +130,27 @@ class OrderServiceImplTest {
         assertEquals("保存订单明细失败", ex.getMessage());
     }
 
+    @Test
+    void addOrder_shouldRecalculateTotalFeeByShopShippingRule() {
+        UserContext.setUser(37L);
+        when(addressClient.getAddressById(100L)).thenReturn(AjaxResult.success(buildAddress()));
+        when(itemClient.getItemById(200L)).thenReturn(AjaxResult.success(buildItemDetail("FIXED", 800, 0, 10L)));
+
+        AtomicReference<Order> savedOrderRef = new AtomicReference<>();
+        doAnswer(invocation -> {
+            Order order = invocation.getArgument(0);
+            order.setId(99L);
+            savedOrderRef.set(order);
+            return true;
+        }).when(orderService).save(any(Order.class));
+        when(orderDetailService.addOrderDetails(anyList(), eq(99L))).thenReturn(true);
+
+        orderService.addOrder(buildOrderForm());
+
+        assertNotNull(savedOrderRef.get());
+        assertEquals(2799L, savedOrderRef.get().getTotalFee());
+    }
+
     private static Address buildAddress() {
         return new Address()
                 .setId(100L)
@@ -131,6 +160,17 @@ class OrderServiceImplTest {
                 .setCity("上海市")
                 .setTown("浦东新区")
                 .setStreet("世纪大道100号");
+    }
+
+    private static ItemDetailVO buildItemDetail(String shippingType, Integer shippingFee, Integer threshold, Long shopId) {
+        ItemDetailVO itemDetailVO = new ItemDetailVO();
+        itemDetailVO.setId(200L);
+        itemDetailVO.setName("测试商品");
+        itemDetailVO.setShopId(shopId);
+        itemDetailVO.setShippingType(shippingType);
+        itemDetailVO.setShippingFee(shippingFee);
+        itemDetailVO.setFreeShippingThreshold(threshold);
+        return itemDetailVO;
     }
 
     private static OrderFormDTO buildOrderForm() {

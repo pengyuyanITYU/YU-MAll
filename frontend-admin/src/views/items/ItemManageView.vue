@@ -3,7 +3,7 @@
     <div class="toolbar">
       <el-form :inline="true" :model="query">
         <el-form-item label="商品名">
-          <el-input v-model="query.name" placeholder="输入商品名称" clearable />
+          <el-input v-model="query.name" placeholder="输入商品名" clearable />
         </el-form-item>
         <el-form-item label="分类">
           <el-input v-model="query.category" placeholder="输入分类" clearable />
@@ -24,14 +24,25 @@
 
     <el-table :data="rows" stripe v-loading="loading">
       <el-table-column type="index" label="序号" :index="rowIndex" width="80" />
-      <el-table-column prop="name" label="商品名" min-width="180" show-overflow-tooltip />
+      <el-table-column prop="name" label="商品名" min-width="200" show-overflow-tooltip />
+      <el-table-column label="店铺" min-width="180" show-overflow-tooltip>
+        <template #default="{ row }">
+          <div class="shop-cell">
+            <span>{{ row.shopName || '-' }}</span>
+            <el-tag v-if="row.isSelf === 1" size="small" type="danger" effect="plain">自营</el-tag>
+          </div>
+        </template>
+      </el-table-column>
       <el-table-column prop="category" label="分类" min-width="120" />
       <el-table-column prop="brand" label="品牌" width="120" />
       <el-table-column label="价格" width="120">
-        <template #default="{ row }">￥{{ money(row.price) }}</template>
+        <template #default="{ row }">¥{{ money(row.price) }}</template>
       </el-table-column>
       <el-table-column prop="stock" label="库存" width="90" />
       <el-table-column prop="sold" label="销量" width="90" />
+      <el-table-column label="运费说明" min-width="180" show-overflow-tooltip>
+        <template #default="{ row }">{{ row.shippingDesc || '-' }}</template>
+      </el-table-column>
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
           <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '上架' : '下架' }}</el-tag>
@@ -77,6 +88,29 @@
 
       <el-row :gutter="12">
         <el-col :span="12">
+          <el-form-item label="所属店铺" prop="shopId">
+            <el-select v-model="form.shopId" clearable filterable placeholder="请选择店铺" style="width: 100%">
+              <el-option v-for="shop in shopOptions" :key="shop.id" :label="shop.name" :value="Number(shop.id)">
+                <div class="shop-option">
+                  <span>{{ shop.name }}</span>
+                  <span class="shop-option-meta">{{ shop.isSelf === 1 ? '自营' : '商家' }}</span>
+                </div>
+              </el-option>
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="状态">
+            <el-select v-model="form.status" style="width: 100%">
+              <el-option label="上架" :value="1" />
+              <el-option label="下架" :value="2" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+      </el-row>
+
+      <el-row :gutter="12">
+        <el-col :span="12">
           <el-form-item label="主图" prop="image">
             <div class="image-upload-block">
               <el-upload :show-file-list="false" :http-request="uploadMainImage" :before-upload="beforeImageUpload">
@@ -88,19 +122,8 @@
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="状态">
-            <el-select v-model="form.status">
-              <el-option label="上架" :value="1" />
-              <el-option label="下架" :value="2" />
-            </el-select>
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-      <el-row :gutter="12">
-        <el-col :span="24">
           <el-form-item label="分类" prop="categoryId">
-            <el-select v-model="form.categoryId" clearable filterable placeholder="请选择分类" @change="onCategoryChange">
+            <el-select v-model="form.categoryId" clearable filterable placeholder="请选择分类" style="width: 100%" @change="onCategoryChange">
               <el-option v-for="c in categoryOptions" :key="c.id" :label="c.name" :value="c.id" />
             </el-select>
           </el-form-item>
@@ -222,9 +245,14 @@
       <el-descriptions :column="1" border>
         <el-descriptions-item label="商品ID">{{ detailData.id }}</el-descriptions-item>
         <el-descriptions-item label="商品名">{{ detailData.name }}</el-descriptions-item>
+        <el-descriptions-item label="所属店铺">
+          {{ detailData.shopName || '-' }}
+          <el-tag v-if="detailData.isSelf === 1" size="small" type="danger" effect="plain">自营</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="运费说明">{{ detailData.shippingDesc || '-' }}</el-descriptions-item>
         <el-descriptions-item label="分类">{{ detailData.category || '-' }}</el-descriptions-item>
         <el-descriptions-item label="品牌">{{ detailData.brand || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="价格">￥{{ money(detailData.price) }}</el-descriptions-item>
+        <el-descriptions-item label="价格">¥{{ money(detailData.price) }}</el-descriptions-item>
         <el-descriptions-item label="轮播图数">{{ detailData.bannerImages?.length || 0 }}</el-descriptions-item>
         <el-descriptions-item label="SKU数">{{ detailData.skuList?.length || 0 }}</el-descriptions-item>
       </el-descriptions>
@@ -238,8 +266,9 @@ import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type Upload
 import { Plus } from '@element-plus/icons-vue';
 import { listCategoriesSimple } from '@/api/categories';
 import { createItem, deleteItem, getItemDetail, listItems, updateItem } from '@/api/items';
+import { listShopSimple } from '@/api/shops';
 import { uploadFile } from '@/api/upload';
-import type { CategoryModel, ItemModel } from '@/types/domain';
+import type { CategoryModel, ItemModel, ShopModel } from '@/types/domain';
 
 interface SkuEditModel {
   localKey: string;
@@ -263,6 +292,7 @@ const query = reactive({
 });
 
 const categoryOptions = ref<CategoryModel[]>([]);
+const shopOptions = ref<ShopModel[]>([]);
 
 const formVisible = ref(false);
 const submitLoading = ref(false);
@@ -297,6 +327,7 @@ const form = reactive({
   status: 1,
   category: '',
   categoryId: undefined as number | undefined,
+  shopId: undefined as number | undefined,
   brand: '',
   price: undefined as number | undefined,
   originalPrice: undefined as number | undefined,
@@ -313,6 +344,7 @@ const rules: FormRules = {
   name: [{ required: true, message: '请输入商品名', trigger: 'blur' }],
   image: [{ required: true, message: '请上传主图', trigger: 'change' }],
   categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
+  shopId: [{ required: true, message: '请选择所属店铺', trigger: 'change' }],
   brand: [{ required: true, message: '请输入品牌', trigger: 'blur' }],
   price: [{ required: true, message: '请输入价格', trigger: 'change' }],
   bannerImagesText: [{ required: true, message: '请上传轮播图', trigger: 'change' }]
@@ -329,6 +361,7 @@ function money(amount?: number) {
 function rowIndex(index: number) {
   return (query.pageNo - 1) * query.pageSize + index + 1;
 }
+
 function extractUploadedUrl(response: any) {
   return response?.data?.url || response?.url || response?.data?.data?.url || '';
 }
@@ -427,7 +460,6 @@ async function uploadSkuImage(options: UploadRequestOptions, skuIndex: number) {
   }
 }
 
-
 async function load() {
   loading.value = true;
   try {
@@ -443,6 +475,13 @@ async function loadCategories() {
   const res = await listCategoriesSimple();
   if (res.code === 200 && Array.isArray(res.data)) {
     categoryOptions.value = res.data;
+  }
+}
+
+async function loadShops() {
+  const res = await listShopSimple();
+  if (res.code === 200 && Array.isArray(res.data)) {
+    shopOptions.value = res.data;
   }
 }
 
@@ -477,6 +516,7 @@ function resetForm() {
   form.status = 1;
   form.category = '';
   form.categoryId = undefined;
+  form.shopId = undefined;
   form.brand = '';
   form.price = undefined;
   form.originalPrice = undefined;
@@ -566,16 +606,16 @@ function validateSkuList() {
   for (let i = 0; i < form.skus.length; i += 1) {
     const sku = form.skus[i];
     if (sku.price === undefined || sku.price === null) {
-      ElMessage.error(`请填写SKU ${i + 1} 的价格`);
+      ElMessage.error(`请填写 SKU ${i + 1} 的价格`);
       return false;
     }
     if (sku.stock === undefined || sku.stock === null) {
-      ElMessage.error(`请填写SKU ${i + 1} 的库存`);
+      ElMessage.error(`请填写 SKU ${i + 1} 的库存`);
       return false;
     }
     const specs = sanitizeSpecs(sku.specsObj);
     if (Object.keys(specs).length === 0) {
-      ElMessage.error(`请填写SKU ${i + 1} 的规格`);
+      ElMessage.error(`请填写 SKU ${i + 1} 的规格`);
       return false;
     }
     const signature = Object.entries(specs)
@@ -583,7 +623,7 @@ function validateSkuList() {
       .map(([key, value]) => `${key}:${value}`)
       .join('|');
     if (signatureSet.has(signature)) {
-      ElMessage.error(`SKU ${i + 1} 的规格与其他SKU重复`);
+      ElMessage.error(`SKU ${i + 1} 的规格与其他 SKU 重复`);
       return false;
     }
     signatureSet.add(signature);
@@ -607,6 +647,7 @@ async function openEdit(row: ItemModel) {
   form.status = detail.status ?? 1;
   form.category = detail.category || '';
   form.categoryId = detail.categoryId;
+  form.shopId = detail.shopId ? Number(detail.shopId) : undefined;
   if (form.categoryId !== undefined && form.categoryId !== null) {
     onCategoryChange(form.categoryId);
   } else if (form.category) {
@@ -670,6 +711,7 @@ function buildPayload() {
     status: form.status,
     category: categoryOptions.value.find((c) => c.id === form.categoryId)?.name || form.category,
     categoryId: form.categoryId,
+    shopId: form.shopId,
     brand: form.brand,
     price: Number(form.price),
     originalPrice: toOptionalNumber(form.originalPrice),
@@ -726,7 +768,7 @@ async function showDetail(row: ItemModel) {
 }
 
 onMounted(async () => {
-  await Promise.all([load(), loadCategories()]);
+  await Promise.all([load(), loadCategories(), loadShops()]);
 });
 </script>
 
@@ -813,7 +855,22 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
 }
+
+.shop-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shop-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.shop-option-meta {
+  color: #909399;
+  font-size: 12px;
+}
 </style>
-
-
-

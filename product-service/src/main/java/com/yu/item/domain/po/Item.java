@@ -52,4 +52,6 @@ public class Item {
     private String brand;
 
     private Long categoryId;
+
+    private Long shopId;
 }

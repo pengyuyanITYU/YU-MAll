@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yu.api.dto.OrderDetailDTO;
+import com.yu.comment.mapper.CommentMapper;
 import com.yu.common.constant.HttpStatus;
 import com.yu.common.domain.page.TableDataInfo;
 import com.yu.common.exception.BusinessException;
@@ -17,9 +18,12 @@ import com.yu.item.domain.dto.ItemSkuDTO;
 import com.yu.item.domain.po.Item;
 import com.yu.item.domain.po.ItemDetail;
 import com.yu.item.domain.po.ItemSku;
+import com.yu.item.domain.po.Shop;
 import com.yu.item.domain.query.ItemPageQuery;
+import com.yu.item.domain.vo.ItemCommentStatsVO;
 import com.yu.item.domain.vo.ItemDashboardVO;
 import com.yu.item.domain.vo.ItemDetailVO;
+import com.yu.item.domain.vo.ItemListVO;
 import com.yu.item.mapper.ItemDetailMapper;
 import com.yu.item.mapper.ItemMapper;
 import com.yu.item.mapper.ItemSkuMapper;
@@ -27,6 +31,7 @@ import com.yu.item.service.ICategoryService;
 import com.yu.item.service.IItemDetailService;
 import com.yu.item.service.IItemService;
 import com.yu.item.service.IItemSkuService;
+import com.yu.item.service.IShopService;
 import io.seata.spring.annotation.GlobalTransactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,8 +56,10 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
     private final ItemMapper itemMapper;
     private final ItemDetailMapper itemDetailMapper;
     private final ItemSkuMapper itemSkuMapper;
+    private final CommentMapper commentMapper;
     private final IItemDetailService itemDetailService;
     private final IItemSkuService itemSkuService;
+    private final IShopService shopService;
 
     private ICategoryService categoryService;
 
@@ -80,7 +87,6 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
             int sold = item.getSold() == null ? 0 : item.getSold();
             int stock = item.getStock() == null ? 0 : item.getStock();
             int num = orderDetailDTO.getNum() != null ? orderDetailDTO.getNum() : 0;
-            // 库存检查：防止库存变为负数
             if (stock < num) {
                 log.warn("商品库存不足, itemId={}, 当前库存={}, 扣减数量={}", item.getId(), stock, num);
                 throw new BusinessException("商品库存不足: " + item.getName());
@@ -110,18 +116,23 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         } else {
             page.addOrder(OrderItem.desc("update_time"));
         }
-        Page<Item> result = lambdaQuery()
+        LambdaQueryWrapper<Item> wrapper = new LambdaQueryWrapper<Item>()
                 .eq(Item::getStatus, 1)
                 .like(StrUtil.isNotBlank(query.getName()), Item::getName, query.getName())
                 .eq(StrUtil.isNotBlank(query.getCategory()), Item::getCategory, query.getCategory())
                 .eq(StrUtil.isNotBlank(query.getBrand()), Item::getBrand, query.getBrand())
                 .ge(query.getMinPrice() != null, Item::getPrice, query.getMinPrice())
-                .le(query.getMaxPrice() != null, Item::getPrice, query.getMaxPrice())
-                .page(page);
+                .le(query.getMaxPrice() != null, Item::getPrice, query.getMaxPrice());
+        Page<Item> result = itemMapper.selectPage(page, wrapper);
+        Map<Long, Shop> shopMap = buildShopMap(result.getRecords());
+        Map<Long, ItemCommentStatsVO> commentStatsMap = buildCommentStatsMap(result.getRecords());
+
         TableDataInfo tableDataInfo = new TableDataInfo();
         tableDataInfo.setCode(HttpStatus.SUCCESS);
         tableDataInfo.setMsg("查询成功");
-        tableDataInfo.setRows(result.getRecords());
+        tableDataInfo.setRows(result.getRecords().stream()
+                .map(item -> buildListVO(item, shopMap.get(item.getShopId()), commentStatsMap.get(item.getId())))
+                .collect(Collectors.toList()));
         tableDataInfo.setTotal(result.getTotal());
         return tableDataInfo;
     }
@@ -142,6 +153,7 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         item.setCategory(itemDTO.getCategory());
         item.setBrand(itemDTO.getBrand());
         item.setCategoryId(itemDTO.getCategoryId());
+        item.setShopId(itemDTO.getShopId());
         if (item.getStatus() == null) {
             item.setStatus(1);
         }
@@ -210,7 +222,9 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         }
         ItemDetail itemDetail = itemDetailMapper.selectOne(new LambdaQueryWrapper<ItemDetail>().eq(ItemDetail::getItemId, id));
         List<ItemSku> skuList = itemSkuMapper.selectList(new LambdaQueryWrapper<ItemSku>().eq(ItemSku::getItemId, id));
-        return convertDetail(item, itemDetail, skuList);
+        Shop shop = item.getShopId() == null ? null : shopService.getById(item.getShopId());
+        ItemCommentStatsVO commentStats = buildCommentStatsMap(Collections.singletonList(item)).get(item.getId());
+        return convertDetail(item, itemDetail, skuList, shop, commentStats);
     }
 
     @Override
@@ -239,8 +253,16 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
                 .collect(Collectors.toMap(ItemDetail::getItemId, Function.identity(), (a, b) -> a));
         List<ItemSku> allSkuList = itemSkuMapper.selectList(new LambdaQueryWrapper<ItemSku>().in(ItemSku::getItemId, validIds));
         Map<Long, List<ItemSku>> skuMap = allSkuList.stream().collect(Collectors.groupingBy(ItemSku::getItemId));
+        Map<Long, Shop> shopMap = buildShopMap(items);
+        Map<Long, ItemCommentStatsVO> commentStatsMap = buildCommentStatsMap(items);
         return items.stream()
-                .map(item -> convertDetail(item, detailMap.get(item.getId()), skuMap.get(item.getId())))
+                .map(item -> convertDetail(
+                        item,
+                        detailMap.get(item.getId()),
+                        skuMap.get(item.getId()),
+                        shopMap.get(item.getShopId()),
+                        commentStatsMap.get(item.getId())
+                ))
                 .collect(Collectors.toList());
     }
 
@@ -311,7 +333,7 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         }
     }
 
-    private ItemDetailVO convertDetail(Item item, ItemDetail itemDetail, List<ItemSku> skuList) {
+    private ItemDetailVO convertDetail(Item item, ItemDetail itemDetail, List<ItemSku> skuList, Shop shop, ItemCommentStatsVO commentStats) {
         ItemDetailVO vo = new ItemDetailVO();
         vo.setId(item.getId());
         vo.setName(item.getName());
@@ -327,6 +349,8 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         vo.setImage(item.getImage());
         vo.setStock(item.getStock());
         vo.setCategoryId(item.getCategoryId());
+        fillCommentStats(vo, item, commentStats);
+        fillShopFields(vo, item, shop);
         if (itemDetail != null) {
             vo.setBannerImages(parseStringList(itemDetail.getBannerImages()));
             vo.setDetailHtml(itemDetail.getDetailHtml());
@@ -346,6 +370,133 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
             vo.setSkuList(skuVOS);
         }
         return vo;
+    }
+
+    private ItemListVO buildListVO(Item item, Shop shop, ItemCommentStatsVO commentStats) {
+        ItemListVO vo = new ItemListVO();
+        vo.setId(item.getId());
+        vo.setName(item.getName());
+        vo.setSubTitle(item.getSubTitle());
+        vo.setImage(item.getImage());
+        vo.setPrice(item.getPrice());
+        vo.setOriginalPrice(item.getOriginalPrice());
+        vo.setSold(item.getSold());
+        vo.setBrand(item.getBrand());
+        vo.setCategory(item.getCategory());
+        fillCommentStats(vo, item, commentStats);
+        fillShopFields(vo, item, shop);
+        return vo;
+    }
+
+    private Map<Long, Shop> buildShopMap(List<Item> items) {
+        if (CollUtils.isEmpty(items)) {
+            return Collections.emptyMap();
+        }
+        List<Long> shopIds = items.stream()
+                .map(Item::getShopId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        if (CollUtils.isEmpty(shopIds)) {
+            return Collections.emptyMap();
+        }
+        return shopService.listByIds(shopIds).stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(Shop::getId, Function.identity(), (a, b) -> a));
+    }
+
+    private Map<Long, ItemCommentStatsVO> buildCommentStatsMap(List<Item> items) {
+        if (CollUtils.isEmpty(items)) {
+            return Collections.emptyMap();
+        }
+        List<Long> itemIds = items.stream()
+                .map(Item::getId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        if (CollUtils.isEmpty(itemIds)) {
+            return Collections.emptyMap();
+        }
+        List<ItemCommentStatsVO> stats = commentMapper.selectItemStatsByItemIds(itemIds);
+        if (CollUtils.isEmpty(stats)) {
+            return Collections.emptyMap();
+        }
+        return stats.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(ItemCommentStatsVO::getItemId, Function.identity(), (a, b) -> a));
+    }
+
+    private void fillShopFields(ItemListVO vo, Item item, Shop shop) {
+        vo.setShopId(item.getShopId());
+        if (shop == null) {
+            return;
+        }
+        vo.setShopName(shop.getName());
+        vo.setIsSelf(shop.getIsSelf());
+        vo.setShippingType(shop.getShippingType());
+        vo.setShippingFee(shop.getShippingFee());
+        vo.setFreeShippingThreshold(shop.getFreeShippingThreshold());
+        vo.setShippingDesc(buildShippingDesc(shop));
+    }
+
+    private void fillShopFields(ItemDetailVO vo, Item item, Shop shop) {
+        vo.setShopId(item.getShopId());
+        if (shop == null) {
+            return;
+        }
+        vo.setShopName(shop.getName());
+        vo.setIsSelf(shop.getIsSelf());
+        vo.setShippingType(shop.getShippingType());
+        vo.setShippingFee(shop.getShippingFee());
+        vo.setFreeShippingThreshold(shop.getFreeShippingThreshold());
+        vo.setShippingDesc(buildShippingDesc(shop));
+    }
+
+    private void fillCommentStats(ItemListVO vo, Item item, ItemCommentStatsVO commentStats) {
+        int approvedCount = commentStats != null && commentStats.getApprovedCount() != null
+                ? commentStats.getApprovedCount()
+                : 0;
+        vo.setCommentCount(approvedCount);
+        vo.setPositiveRate(toPositiveRate(commentStats));
+    }
+
+    private void fillCommentStats(ItemDetailVO vo, Item item, ItemCommentStatsVO commentStats) {
+        int approvedCount = commentStats != null && commentStats.getApprovedCount() != null
+                ? commentStats.getApprovedCount()
+                : 0;
+        vo.setCommentCount(approvedCount);
+        vo.setPositiveRate(toPositiveRate(commentStats));
+    }
+
+    private Integer toPositiveRate(ItemCommentStatsVO commentStats) {
+        if (commentStats == null || commentStats.getApprovedCount() == null || commentStats.getApprovedCount() <= 0) {
+            return null;
+        }
+        int positiveCount = commentStats.getPositiveCount() == null ? 0 : commentStats.getPositiveCount();
+        return (int) Math.round(positiveCount * 100.0 / commentStats.getApprovedCount());
+    }
+
+    private String buildShippingDesc(Shop shop) {
+        if (shop == null || StrUtil.isBlank(shop.getShippingType())) {
+            return "";
+        }
+        if ("FREE".equals(shop.getShippingType())) {
+            return "包邮";
+        }
+        if ("FIXED".equals(shop.getShippingType())) {
+            return "运费" + formatFen(shop.getShippingFee()) + "元";
+        }
+        if ("THRESHOLD_FREE".equals(shop.getShippingType())) {
+            return "满" + formatFen(shop.getFreeShippingThreshold()) + "元包邮";
+        }
+        return "";
+    }
+
+    private String formatFen(Integer amount) {
+        if (amount == null) {
+            return "0.00";
+        }
+        return String.format("%.2f", amount / 100.0);
     }
 
     private List<String> parseStringList(String json) {

@@ -2,9 +2,12 @@ package com.yu.order.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yu.api.client.AddressClient;
+import com.yu.api.client.ItemClient;
 import com.yu.api.po.Address;
+import com.yu.api.vo.ItemDetailVO;
 import com.yu.common.domain.AjaxResult;
 import com.yu.common.utils.UserContext;
+import com.yu.order.domain.dto.OrderDetailDTO;
 import com.yu.order.domain.dto.OrderFormDTO;
 import com.yu.order.domain.dto.UpdateOrderStatusDTO;
 import com.yu.order.domain.enums.OrderStatus;
@@ -28,7 +31,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,6 +43,7 @@ import java.util.stream.Collectors;
 public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements IOrderService {
 
     private final AddressClient addressClient;
+    private final ItemClient itemClient;
 
     @Lazy
     @Autowired
@@ -84,7 +91,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             return orderVO;
         }).collect(Collectors.toList());
 
-        log.info("查询用户{}的订单{}", userId, orderVOList);
+        log.info("查询用户{}的订单={}", userId, orderVOList);
         return orderVOList;
     }
 
@@ -93,7 +100,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     public boolean addOrder(OrderFormDTO orderFormDTO) {
         Long userId = UserContext.getUser();
         if (userId == null) {
-            throw new RuntimeException("用户未登录,请检查登录信息");
+            throw new RuntimeException("用户未登录，请检查登录信息");
         }
 
         AjaxResult<Address> addressData = addressClient.getAddressById(orderFormDTO.getAddressId());
@@ -101,6 +108,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             throw new RuntimeException("收货地址不存在");
         }
         Address address = addressData.getData();
+        Long calculatedTotalFee = calculateTotalFee(orderFormDTO);
+        if (!Objects.equals(orderFormDTO.getTotalFee(), calculatedTotalFee)) {
+            log.warn("订单金额已按店铺运费规则重算, frontendTotalFee={}, backendTotalFee={}", orderFormDTO.getTotalFee(), calculatedTotalFee);
+        }
 
         String detailReceiverAddress = address.getProvince() + address.getCity() + address.getTown() + address.getStreet();
         Order order = new Order();
@@ -113,7 +124,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .setReceiverContact(address.getContact())
                 .setReceiverMobile(address.getMobile())
                 .setReceiverAddress(detailReceiverAddress)
-                .setTotalFee(orderFormDTO.getTotalFee());
+                .setTotalFee(calculatedTotalFee);
 
         boolean save = save(order);
         if (!save || order.getId() == null) {
@@ -191,7 +202,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             orderVO.setReceiverMobile(order.getReceiverMobile());
             orderVO.setReceiverAddress(order.getReceiverAddress());
         }
-        log.info("查询用户{}的订单{}", userId, orderVO);
+        log.info("查询用户{}的订单={}", userId, orderVO);
         return orderVO;
     }
 
@@ -213,7 +224,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .set(Order::getConsignTime, LocalDateTime.now())
                 .update();
         if (!update) {
-            log.info("订单暂不满足发货条件（可能状态不是PAID或支付未满24小时）");
+            log.info("订单暂不满足发货条件");
         }
     }
 
@@ -226,7 +237,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .set(Order::getConsignTime, LocalDateTime.now())
                 .update();
         if (!update) {
-            log.info("订单暂不满足确认条件（可能状态不是SHIPPED或未满足时间条件）");
+            log.info("订单暂不满足确认条件");
         }
     }
 
@@ -258,34 +269,108 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             log.error("订单状态不能为空");
             throw new RuntimeException("订单状态不能为空");
         }
-        boolean update = false;
-        if (status == OrderStatus.PAID) {
-            update = lambdaUpdate().eq(Order::getId, id)
-                    .set(Order::getStatus, status)
-                    .set(Order::getPayTime, LocalDateTime.now())
-                    .set(Order::getPaymentType, paymentType)
-                    .set(Order::getUpdateTime, LocalDateTime.now())
-                    .update();
-        }
-        return update;
+        return lambdaUpdate()
+                .eq(Order::getId, id)
+                .set(Order::getStatus, status.getValue())
+                .set(Order::getPaymentType, paymentType.getValue())
+                .set(Order::getPayTime, LocalDateTime.now())
+                .set(Order::getUpdateTime, LocalDateTime.now())
+                .update();
     }
 
     @Override
     public void updateAllPayOrderStatus() {
-        Long userId = UserContext.getUser();
-        if (userId == null) {
-            log.error("用户未登录,请检查登录信息");
-            throw new RuntimeException("用户未登录,请检查登录信息");
-        }
-        boolean update = lambdaUpdate()
-                .eq(Order::getStatus, OrderStatus.PAID)
-                .set(Order::getStatus, OrderStatus.SUCCESS)
+        lambdaUpdate()
+                .eq(Order::getStatus, OrderStatus.UNPAID.getValue())
+                .set(Order::getStatus, OrderStatus.PAID.getValue())
+                .set(Order::getPayTime, LocalDateTime.now())
                 .set(Order::getUpdateTime, LocalDateTime.now())
-                .set(Order::getConsignTime, LocalDateTime.now())
                 .update();
-        if (!update) {
-            log.error("更新订单状态失败");
-            throw new RuntimeException("更新订单状态失败");
+    }
+
+    private Long calculateTotalFee(OrderFormDTO orderFormDTO) {
+        if (orderFormDTO == null || orderFormDTO.getDetails() == null || orderFormDTO.getDetails().isEmpty()) {
+            throw new RuntimeException("订单明细不能为空");
+        }
+        long itemTotalFee = 0L;
+        Map<Long, ShopSettlement> shopSettlementMap = new HashMap<>();
+        for (OrderDetailDTO detail : orderFormDTO.getDetails()) {
+            AjaxResult<ItemDetailVO> itemResult = itemClient.getItemById(detail.getItemId());
+            if (itemResult == null || !itemResult.isSuccess() || itemResult.getData() == null) {
+                throw new RuntimeException("查询商品失败");
+            }
+            ItemDetailVO item = itemResult.getData();
+            if (item.getShopId() == null) {
+                throw new RuntimeException("商品未配置店铺");
+            }
+            long lineTotal = nullToZero(detail.getPrice()) * (detail.getNum() == null ? 0 : detail.getNum());
+            itemTotalFee += lineTotal;
+
+            ShopSettlement settlement = shopSettlementMap.computeIfAbsent(item.getShopId(), key ->
+                    new ShopSettlement(item.getShippingType(), item.getShippingFee(), item.getFreeShippingThreshold()));
+            settlement.addSubtotal(lineTotal);
+        }
+        long shippingTotalFee = shopSettlementMap.values().stream()
+                .mapToLong(this::calculateShopShippingFee)
+                .sum();
+        return itemTotalFee + shippingTotalFee;
+    }
+
+    private long calculateShopShippingFee(ShopSettlement settlement) {
+        if (settlement == null || settlement.getShippingType() == null) {
+            return 0L;
+        }
+        if ("FREE".equals(settlement.getShippingType())) {
+            return 0L;
+        }
+        if ("FIXED".equals(settlement.getShippingType())) {
+            return nullToZero(settlement.getShippingFee());
+        }
+        if ("THRESHOLD_FREE".equals(settlement.getShippingType())) {
+            long threshold = nullToZero(settlement.getFreeShippingThreshold());
+            return settlement.getSubtotal() >= threshold ? 0L : nullToZero(settlement.getShippingFee());
+        }
+        throw new RuntimeException("不支持的运费模式");
+    }
+
+    private long nullToZero(Integer value) {
+        return value == null ? 0L : value.longValue();
+    }
+
+    private long nullToZero(Long value) {
+        return value == null ? 0L : value;
+    }
+
+    private static class ShopSettlement {
+        private final String shippingType;
+        private final Integer shippingFee;
+        private final Integer freeShippingThreshold;
+        private long subtotal;
+
+        private ShopSettlement(String shippingType, Integer shippingFee, Integer freeShippingThreshold) {
+            this.shippingType = shippingType;
+            this.shippingFee = shippingFee;
+            this.freeShippingThreshold = freeShippingThreshold;
+        }
+
+        private void addSubtotal(long amount) {
+            this.subtotal += amount;
+        }
+
+        public String getShippingType() {
+            return shippingType;
+        }
+
+        public Integer getShippingFee() {
+            return shippingFee;
+        }
+
+        public Integer getFreeShippingThreshold() {
+            return freeShippingThreshold;
+        }
+
+        public long getSubtotal() {
+            return subtotal;
         }
     }
 }

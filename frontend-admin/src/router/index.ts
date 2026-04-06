@@ -33,6 +33,12 @@ const router = createRouter({
           meta: { title: '商品管理' }
         },
         {
+          path: '/shops',
+          name: 'shops',
+          component: () => import('@/views/shops/ShopManageView.vue'),
+          meta: { title: '店铺管理' }
+        },
+        {
           path: '/categories',
           name: 'categories',
           component: () => import('@/views/categories/CategoryManageView.vue'),
@@ -43,6 +49,12 @@ const router = createRouter({
           name: 'orders',
           component: () => import('@/views/orders/OrderManageView.vue'),
           meta: { title: '订单管理' }
+        },
+        {
+          path: '/comments',
+          name: 'comments',
+          component: () => import('@/views/comments/CommentReviewView.vue'),
+          meta: { title: '评论审核' }
         }
       ]
     }

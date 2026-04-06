@@ -40,6 +40,27 @@ export interface ItemModel {
   categoryId?: number;
   brand?: string;
   tags?: string;
+  shopId?: number;
+  shopName?: string;
+  isSelf?: number;
+  shippingType?: string;
+  shippingFee?: number;
+  freeShippingThreshold?: number;
+  shippingDesc?: string;
+  commentCount?: number;
+  positiveRate?: number;
+  updateTime?: string;
+}
+
+export interface ShopModel {
+  id: number | string;
+  name: string;
+  isSelf: number;
+  shippingType: string;
+  shippingFee: number;
+  freeShippingThreshold?: number;
+  status: number;
+  createTime?: string;
   updateTime?: string;
 }
 
@@ -88,5 +109,26 @@ export interface RecentOrder {
   nickName?: string;
   totalPrice: number;
   status?: number | string;
+  createTime?: string;
+}
+
+export interface CommentReviewModel {
+  id: number | string;
+  itemId?: number | string;
+  skuId?: number | string;
+  orderId?: number | string;
+  orderDetailId?: number | string;
+  userId?: number | string;
+  userNickname?: string;
+  userAvatar?: string;
+  rating: number;
+  content: string;
+  images?: string[];
+  skuSpecs?: Record<string, string> | string;
+  itemName?: string;
+  itemImage?: string;
+  likeCount?: number;
+  status?: number;
+  rejectReason?: string;
   createTime?: string;
 }

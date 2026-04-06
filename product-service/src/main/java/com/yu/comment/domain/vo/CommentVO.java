@@ -12,53 +12,71 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-/**
- * <p>
- * 评价列表展示 VO
- * </p>
- */
 @Data
-@ApiModel(description = "评价信息展示")
+@ApiModel(description = "评论详情展示")
 @Accessors(chain = true)
 public class CommentVO implements Serializable {
 
-    @ApiModelProperty( "评价ID")
+    @ApiModelProperty("评论ID")
     private Long id;
 
-    @ApiModelProperty( "用户ID")
+    @ApiModelProperty("用户ID")
     private Long userId;
 
-    @ApiModelProperty("用户昵称(若匿名则显示为***)")
+    @ApiModelProperty("商品ID")
+    private Long itemId;
+
+    @ApiModelProperty("SKU ID")
+    private Long skuId;
+
+    @ApiModelProperty("订单ID")
+    private Long orderId;
+
+    @ApiModelProperty("订单明细ID")
+    private Long orderDetailId;
+
+    @ApiModelProperty("用户昵称")
     private String userNickname;
 
     @ApiModelProperty("用户头像")
     private String userAvatar;
 
-    @ApiModelProperty( "评分")
+    @ApiModelProperty("评分")
     private Integer rating;
 
-    @ApiModelProperty("评价内容")
+    @ApiModelProperty("评论内容")
     private String content;
 
     @ApiModelProperty("图片列表")
     private List<String> images;
 
+    @ApiModelProperty("是否匿名")
+    private Boolean isAnonymous;
+
+    @ApiModelProperty("审核状态")
+    private Integer status;
+
+    @ApiModelProperty("驳回原因")
+    private String rejectReason;
 
     @ApiModelProperty("点赞数")
     private Integer likeCount;
 
-    @ApiModelProperty( "商家回复内容")
+    @ApiModelProperty("商家回复内容")
     private String merchantReplyContent;
 
     @ApiModelProperty("商家回复时间")
     private LocalDateTime merchantReplyTime;
 
-    @ApiModelProperty( "创建时间")
+    @ApiModelProperty("创建时间")
     private LocalDateTime createTime;
 
-    @ApiModelProperty( "SKU信息(如: 红色, 64G)")
+    @ApiModelProperty("更新时间")
+    private LocalDateTime updateTime;
+
+    @ApiModelProperty("SKU 规格")
     @TableField(typeHandler = JacksonTypeHandler.class)
-    private Map<String, String> skuSpecs; // 这是一个扩展字段，通常需要联表查询或在Service层填充
+    private Map<String, String> skuSpecs;
 
     private String itemName;
 

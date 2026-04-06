@@ -18,6 +18,9 @@ public class OrderDetailVO {
     @ApiModelProperty("商品ID")
     private Long itemId;
 
+    @ApiModelProperty("商品SKU ID")
+    private Long skuId;
+
     @ApiModelProperty("购买数量")
     private Integer num;
 

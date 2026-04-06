@@ -17,7 +17,7 @@ spring:
         - id: item
           uri: lb://yu-mall-product-service
           predicates:
-            - Path=/items/**,/admin/items/**,/admin/categories/**,/search/**
+            - Path=/items/**,/admin/items/**,/admin/categories/**,/admin/shops/**,/admin/comments/**,/search/**
         - id: cart
           uri: lb://yu-mall-order-service
           predicates:

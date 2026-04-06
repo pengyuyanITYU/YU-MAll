@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: yu-mall-product-service
+  autoconfigure:
+    exclude:
+      - com.baomidou.mybatisplus.autoconfigure.DdlAutoConfiguration
   cloud:
     nacos:
       server-addr: 192.168.100.128:8848
