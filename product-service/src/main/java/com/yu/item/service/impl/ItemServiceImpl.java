@@ -106,6 +106,15 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
 
     @Override
     public TableDataInfo listItem(ItemPageQuery itemPageQuery) {
+        return listItems(itemPageQuery, true);
+    }
+
+    @Override
+    public TableDataInfo listAdminItems(ItemPageQuery itemPageQuery) {
+        return listItems(itemPageQuery, false);
+    }
+
+    private TableDataInfo listItems(ItemPageQuery itemPageQuery, boolean onlyOnShelf) {
         ItemPageQuery query = itemPageQuery == null ? new ItemPageQuery() : itemPageQuery;
         Page<Item> page = new Page<>(query.getPageNo(), query.getPageSize());
         if (StrUtil.isNotBlank(query.getSold())) {
@@ -117,10 +126,11 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
             page.addOrder(OrderItem.desc("update_time"));
         }
         LambdaQueryWrapper<Item> wrapper = new LambdaQueryWrapper<Item>()
-                .eq(Item::getStatus, 1)
+                .eq(onlyOnShelf, Item::getStatus, 1)
                 .like(StrUtil.isNotBlank(query.getName()), Item::getName, query.getName())
                 .eq(StrUtil.isNotBlank(query.getCategory()), Item::getCategory, query.getCategory())
                 .eq(StrUtil.isNotBlank(query.getBrand()), Item::getBrand, query.getBrand())
+                .eq(query.getShopId() != null, Item::getShopId, query.getShopId())
                 .ge(query.getMinPrice() != null, Item::getPrice, query.getMinPrice())
                 .le(query.getMaxPrice() != null, Item::getPrice, query.getMaxPrice());
         Page<Item> result = itemMapper.selectPage(page, wrapper);
@@ -380,8 +390,11 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         vo.setImage(item.getImage());
         vo.setPrice(item.getPrice());
         vo.setOriginalPrice(item.getOriginalPrice());
+        vo.setStock(item.getStock());
         vo.setSold(item.getSold());
         vo.setBrand(item.getBrand());
+        vo.setStatus(item.getStatus());
+        vo.setUpdateTime(item.getUpdateTime());
         vo.setCategory(item.getCategory());
         fillCommentStats(vo, item, commentStats);
         fillShopFields(vo, item, shop);

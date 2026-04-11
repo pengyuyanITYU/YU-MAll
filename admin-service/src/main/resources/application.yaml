@@ -1,0 +1,74 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: yu-mall-admin-service
+  cloud:
+    nacos:
+      server-addr: 192.168.100.128:8848
+      config:
+        import-check:
+          enabled: false
+      discovery:
+        server-addr: 192.168.100.128:8848
+  datasource:
+    url: jdbc:mysql://${yu.db.host:192.168.100.128}:${yu.db.port:3307}/${yu.db.database}?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai&useSSL=false&rewriteBatchedStatements=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${yu.db.un:root}
+    password: ${yu.db.pw:123}
+
+knife4j:
+  enable: true
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
+  global-config:
+    db-config:
+      update-strategy: not_null
+      id-type: auto
+
+jackson:
+  date-format: yyyy-MM-dd HH:mm:ss
+  time-zone: GMT+8
+  deserialization:
+    fail-on-unknown-properties: false
+
+logging:
+  level:
+    com.yu: debug
+  pattern:
+    dateformat: HH:mm:ss:SSS
+  file:
+    path: logs/${spring.application.name}
+
+seata:
+  enabled: false
+  registry:
+    type: nacos
+    nacos:
+      server-addr: 192.168.100.128:8848
+      namespace: ""
+      group: DEFAULT_GROUP
+      application: seata-server
+      username: nacos
+      password: nacos
+  tx-service-group: mall
+  service:
+    vgroup-mapping:
+      mall: "default"
+  data-source-proxy-mode: AT
+
+yu:
+  jwt:
+    location: classpath:hmall.jks
+    password: hmall123
+    alias: hmall
+  db:
+    host: 192.168.100.128
+    port: 3307
+    database: mall-sys
+    un: root
+    pw: 123

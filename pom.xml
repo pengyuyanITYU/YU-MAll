@@ -10,6 +10,7 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>admin-service</module>
         <module>user-center-service</module>
         <module>product-service</module>
         <module>order-service</module>

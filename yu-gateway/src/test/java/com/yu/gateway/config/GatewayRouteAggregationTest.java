@@ -24,10 +24,29 @@ class GatewayRouteAggregationTest {
     }
 
     @Test
+    void applicationYaml_shouldRouteShopPathsToProductService() throws IOException {
+        String yaml = readGatewayYaml();
+        assertTrue(yaml.contains("/shops/**"));
+    }
+
+    @Test
     void applicationYaml_shouldRouteAiPathsToAiService() throws IOException {
         String yaml = readGatewayYaml();
         assertTrue(yaml.contains("uri: lb://yu-mall-ai-service"));
         assertTrue(yaml.contains("- Path=/ai/**"));
+    }
+
+    @Test
+    void applicationYaml_shouldRouteAdminPathsToAdminServiceOnly() throws IOException {
+        String yaml = readGatewayYaml();
+        assertTrue(yaml.contains("uri: lb://yu-mall-admin-service"));
+        assertTrue(yaml.contains("- Path=/admin/**,/admins/**"));
+        assertTrue(!yaml.contains("/admin/items/**"));
+        assertTrue(!yaml.contains("/admin/categories/**"));
+        assertTrue(!yaml.contains("/admin/shops/**"));
+        assertTrue(!yaml.contains("/admin/comments/**"));
+        assertTrue(!yaml.contains("/admin/users/**"));
+        assertTrue(!yaml.contains("/admin/orders/**"));
     }
 
     private static String readGatewayYaml() throws IOException {

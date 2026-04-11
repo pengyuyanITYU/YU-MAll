@@ -1,9 +1,8 @@
 :root {
-  --yu-primary: #409eff;
-  --yu-secondary: #36cfc9;
-  --yu-bg: #f3f7fb;
-  --yu-text: #1f2937;
-  --yu-muted: #6b7280;
+  --yu-page-bg: #f3f6fb;
+  --yu-card-bg: #ffffff;
+  --yu-text-main: #222b3a;
+  --yu-text-secondary: #7f8aa1;
 }
 
 * {
@@ -21,9 +20,18 @@ body,
 
 body {
   font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
-  color: var(--yu-text);
-  background: radial-gradient(circle at 5% 0%, rgba(54, 207, 201, 0.12), transparent 35%),
-    radial-gradient(circle at 95% 5%, rgba(64, 158, 255, 0.15), transparent 35%), var(--yu-bg);
+  color: var(--yu-text-main);
+  background:
+    radial-gradient(circle at top left, rgba(112, 91, 255, 0.08), transparent 26%),
+    radial-gradient(circle at right top, rgba(79, 140, 255, 0.08), transparent 24%),
+    var(--yu-page-bg);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }
 
 a {

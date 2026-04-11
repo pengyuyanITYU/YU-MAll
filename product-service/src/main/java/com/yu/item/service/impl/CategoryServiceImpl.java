@@ -80,8 +80,25 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         if (count != null && count > 0) {
             throw new BizIllegalException("分类名称已存在");
         }
+        boolean categoryNameChanged = !StrUtil.equals(category.getName(), categoryDTO.getName());
         BeanUtils.copyProperties(categoryDTO, category);
-        return updateById(category);
+        boolean updated = updateById(category);
+        if (!updated) {
+            return false;
+        }
+        if (!categoryNameChanged) {
+            return true;
+        }
+        Long itemCount = itemService.lambdaQuery()
+                .eq(Item::getCategoryId, categoryDTO.getId())
+                .count();
+        if (itemCount == null || itemCount <= 0) {
+            return true;
+        }
+        return itemService.lambdaUpdate()
+                .eq(Item::getCategoryId, categoryDTO.getId())
+                .set(Item::getCategory, categoryDTO.getName())
+                .update();
     }
 
     @Override

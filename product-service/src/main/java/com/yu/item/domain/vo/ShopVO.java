@@ -19,6 +19,8 @@ public class ShopVO {
 
     private Integer freeShippingThreshold;
 
+    private String shippingDesc;
+
     private Integer status;
 
     private LocalDateTime createTime;

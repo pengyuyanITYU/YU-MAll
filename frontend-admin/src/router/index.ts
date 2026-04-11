@@ -1,13 +1,21 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
+const authView = () => import('@/views/LoginView.vue');
+
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
       path: '/login',
       name: 'login',
-      component: () => import('@/views/LoginView.vue'),
+      component: authView,
       meta: { title: '管理端登录', public: true }
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: authView,
+      meta: { title: '管理端注册', public: true }
     },
     {
       path: '/',
@@ -67,7 +75,7 @@ router.beforeEach((to, _from, next) => {
     next('/login');
     return;
   }
-  if (to.path === '/login' && token) {
+  if (token && (to.path === '/login' || to.path === '/register')) {
     next('/dashboard');
     return;
   }

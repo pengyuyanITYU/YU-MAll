@@ -2,6 +2,8 @@ package com.yu.item.domain.vo;
 
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 public class ItemListVO {
 
@@ -17,6 +19,8 @@ public class ItemListVO {
 
     private Integer originalPrice;
 
+    private Integer stock;
+
     private Integer sold;
 
     private Integer commentCount;
@@ -24,6 +28,10 @@ public class ItemListVO {
     private Integer positiveRate;
 
     private String brand;
+
+    private Integer status;
+
+    private LocalDateTime updateTime;
 
     private String category;
 

@@ -15,7 +15,6 @@ class ServiceAggregationFeignClientTest {
     @Test
     void userDomainClients_shouldTargetUserCenterService() {
         assertFeignService(UserClient.class, "yu-mall-user-center-service");
-        assertFeignService(AdminUserClient.class, "yu-mall-user-center-service");
         assertFeignService(AddressClient.class, "yu-mall-user-center-service");
         assertFeignService(MemberClient.class, "yu-mall-user-center-service");
     }
@@ -31,7 +30,6 @@ class ServiceAggregationFeignClientTest {
     void aggregatedServiceClients_shouldDeclareUniqueContextIds() {
         assertUniqueContextIds(
                 UserClient.class,
-                AdminUserClient.class,
                 AddressClient.class,
                 MemberClient.class
         );

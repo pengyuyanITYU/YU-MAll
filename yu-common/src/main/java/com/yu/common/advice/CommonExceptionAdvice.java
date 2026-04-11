@@ -16,6 +16,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.util.NestedServletException;
 
 import java.net.BindException;
@@ -65,6 +66,14 @@ public class CommonExceptionAdvice {
     public AjaxResult  handleRuntimeException(Exception e) {
         log.error("其他异常 uri : {} -> ", WebUtils.getRequest().getRequestURI(), e);
         return AjaxResult.error(e.getMessage());
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<AjaxResult<Void>> handleNoResourceFoundException(NoResourceFoundException e) {
+        log.warn("route not found -> {}", e.getMessage());
+        return ResponseEntity
+                .status(org.springframework.http.HttpStatus.NOT_FOUND)
+                .body(AjaxResult.error(com.yu.common.constant.HttpStatus.NOT_FOUND, e.getMessage()));
     }
 
     private ResponseEntity<R<Void>> processResponse(CommonException e){

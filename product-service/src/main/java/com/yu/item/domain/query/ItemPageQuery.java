@@ -19,6 +19,9 @@ public class ItemPageQuery extends PageQuery {
     @ApiModelProperty("商品品牌")
     private String brand;
 
+    @ApiModelProperty("店铺ID")
+    private Long shopId;
+
     @ApiModelProperty("销量排序标记")
     private String sold;
 

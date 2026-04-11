@@ -26,6 +26,7 @@ docs/
 .superpowers
 .没
 .m2-cache/
+AGENTS.md
 nul
 *.prefs/
 *.classpath

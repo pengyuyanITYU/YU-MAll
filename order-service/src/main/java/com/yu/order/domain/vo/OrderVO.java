@@ -63,6 +63,9 @@ public class OrderVO {
     @ApiModelProperty("details")
     private List<OrderDetailVO> details;
 
+    @ApiModelProperty("是否已全部评价")
+    private boolean commented;
+
     @ApiModelProperty("close time")
     private LocalDateTime closeTime;
 }

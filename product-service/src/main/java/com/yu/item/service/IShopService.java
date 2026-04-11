@@ -19,6 +19,8 @@ public interface IShopService extends IService<Shop> {
 
     ShopVO getShopById(Long id);
 
+    ShopVO getEnabledShopById(Long id);
+
     TableDataInfo listShops(ShopPageQuery query);
 
     List<ShopVO> listSimple();

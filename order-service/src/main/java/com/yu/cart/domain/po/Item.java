@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("item")
-public class Item implements Serializable {
+public class         Item implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

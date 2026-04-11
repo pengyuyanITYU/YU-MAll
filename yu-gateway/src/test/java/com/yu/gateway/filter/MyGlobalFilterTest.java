@@ -55,6 +55,23 @@ class MyGlobalFilterTest {
     }
 
     @Test
+    void shouldAllowAdminLoginPathWithoutToken() {
+        AuthProperties authProperties = new AuthProperties();
+        authProperties.setExcludePaths(List.of("/admins/**"));
+        JwtProperties jwtProperties = new JwtProperties();
+        JwtTool jwtTool = mock(JwtTool.class);
+        MyGlobalFilter filter = new MyGlobalFilter(authProperties, jwtProperties, jwtTool);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.post("/admins/login").build()
+        );
+        GatewayFilterChain chain = serverWebExchange -> Mono.empty();
+
+        filter.filter(exchange, chain).block();
+
+        assertNull(exchange.getResponse().getStatusCode());
+    }
+
+    @Test
     void shouldRejectProtectedPathWithoutToken() {
         AuthProperties authProperties = new AuthProperties();
         authProperties.setExcludePaths(List.of("/users/login"));

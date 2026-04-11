@@ -5,7 +5,7 @@ import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yu.api.client.AddressClient;
-import com.yu.api.client.AdminUserClient;
+import com.yu.api.client.InternalAdminUserClient;
 import com.yu.api.po.Address;
 import com.yu.api.vo.UserVO;
 import com.yu.common.domain.AjaxResult;
@@ -40,7 +40,7 @@ public class AdminOrderServiceImpl extends ServiceImpl<OrderMapper, Order> imple
 
     private final AddressClient addressClient;
 
-    private final AdminUserClient adminUserClient;
+    private final InternalAdminUserClient internalAdminUserClient;
 
     @Lazy
     @Autowired
@@ -58,7 +58,7 @@ public class AdminOrderServiceImpl extends ServiceImpl<OrderMapper, Order> imple
         if (CollUtils.isNotEmpty(records)) {
             List<Long> userIds = records.stream().map(OrderVO::getUserId).filter(Objects::nonNull).distinct().collect(Collectors.toList());
             if (CollUtils.isNotEmpty(userIds)) {
-                AjaxResult<List<UserVO>> users = adminUserClient.getUserInfoByIds(userIds);
+                AjaxResult<List<UserVO>> users = internalAdminUserClient.getByIds(userIds);
                 if (users != null && users.isSuccess() && CollUtil.isNotEmpty(users.getData())) {
                     Map<Long, UserVO> userMap = users.getData().stream()
                             .filter(u -> u != null && u.getId() != null)
@@ -90,7 +90,7 @@ public class AdminOrderServiceImpl extends ServiceImpl<OrderMapper, Order> imple
             orderVO.setReceiverMobile(address.getData().getMobile());
             orderVO.setReceiverAddress(address.getData().getStreet());
         }
-        AjaxResult<List<UserVO>> users = adminUserClient.getUserInfoByIds(Collections.singletonList(order.getUserId()));
+        AjaxResult<List<UserVO>> users = internalAdminUserClient.getByIds(Collections.singletonList(order.getUserId()));
         if (users != null && users.isSuccess() && CollUtil.isNotEmpty(users.getData())) {
             orderVO.setNickName(users.getData().get(0).getNickName());
         }
@@ -106,7 +106,7 @@ public class AdminOrderServiceImpl extends ServiceImpl<OrderMapper, Order> imple
         List<Long> userIds = orders.stream().map(Order::getUserId).filter(Objects::nonNull).distinct().collect(Collectors.toList());
         Map<Long, UserVO> userMap = Collections.emptyMap();
         if (CollUtil.isNotEmpty(userIds)) {
-            AjaxResult<List<UserVO>> users = adminUserClient.getUserInfoByIds(userIds);
+            AjaxResult<List<UserVO>> users = internalAdminUserClient.getByIds(userIds);
             if (users != null && users.isSuccess() && CollUtil.isNotEmpty(users.getData())) {
                 userMap = users.getData().stream()
                         .filter(u -> u != null && u.getId() != null)

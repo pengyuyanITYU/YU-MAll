@@ -11,6 +11,7 @@ import com.yu.common.utils.UserContext;
 import com.yu.order.domain.dto.OrderDetailDTO;
 import com.yu.order.domain.dto.OrderFormDTO;
 import com.yu.order.domain.po.Order;
+import com.yu.order.domain.vo.OrderDetailVO;
 import com.yu.order.domain.vo.OrderVO;
 import com.yu.order.service.IOrderDetailService;
 import org.junit.jupiter.api.AfterEach;
@@ -32,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -98,6 +100,56 @@ class OrderServiceImplTest {
         assertEquals("snapshot-contact", result.get(0).getReceiverContact());
         assertEquals("13800000000", result.get(0).getReceiverMobile());
         assertEquals("snapshot-address", result.get(0).getReceiverAddress());
+    }
+
+    @Test
+    void listById_shouldSetOrderCommentedFalse_whenAnyDetailIsNotCommented() {
+        UserContext.setUser(37L);
+        Order order = new Order();
+        order.setId(1L);
+        order.setUserId(37L);
+        order.setAddressId(100L);
+        order.setReceiverContact("snapshot-contact");
+        order.setReceiverMobile("13800000000");
+        order.setReceiverAddress("snapshot-address");
+
+        doReturn(lambdaQueryWrapper).when(orderService).lambdaQuery();
+        when(lambdaQueryWrapper.eq(org.mockito.ArgumentMatchers.<SFunction<Order, ?>>any(), any())).thenReturn(lambdaQueryWrapper);
+        when(lambdaQueryWrapper.list()).thenReturn(Collections.singletonList(order));
+        when(addressClient.getAddressById(anyLong())).thenReturn(AjaxResult.success(buildAddress()));
+        when(orderDetailService.getByOrderId(1L)).thenReturn(List.of(
+                buildOrderDetailVO(11L, true),
+                buildOrderDetailVO(12L, false)
+        ));
+
+        List<OrderVO> result = orderService.listById(37L);
+
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        assertFalse(result.get(0).isCommented());
+    }
+
+    @Test
+    void getByOrderId_shouldSetOrderCommentedTrue_whenAllDetailsAreCommented() {
+        UserContext.setUser(37L);
+        Order order = new Order();
+        order.setId(1L);
+        order.setUserId(37L);
+        order.setAddressId(100L);
+
+        doReturn(lambdaQueryWrapper).when(orderService).lambdaQuery();
+        when(lambdaQueryWrapper.eq(org.mockito.ArgumentMatchers.<SFunction<Order, ?>>any(), any())).thenReturn(lambdaQueryWrapper);
+        when(lambdaQueryWrapper.one()).thenReturn(order);
+        when(addressClient.getAddressById(anyLong())).thenReturn(AjaxResult.success(buildAddress()));
+        when(orderDetailService.getByOrderId(1L)).thenReturn(List.of(
+                buildOrderDetailVO(11L, true),
+                buildOrderDetailVO(12L, true)
+        ));
+
+        OrderVO result = orderService.getByOrderId(1L);
+
+        assertNotNull(result);
+        assertTrue(result.isCommented());
     }
 
     @Test
@@ -186,5 +238,19 @@ class OrderServiceImplTest {
         orderFormDTO.setTotalFee(1999L);
         orderFormDTO.setDetails(Collections.singletonList(detailDTO));
         return orderFormDTO;
+    }
+
+    private static OrderDetailVO buildOrderDetailVO(Long id, boolean commented) {
+        OrderDetailVO detailVO = new OrderDetailVO();
+        detailVO.setId(id);
+        detailVO.setItemId(200L);
+        detailVO.setSkuId(2002L);
+        detailVO.setNum(1);
+        detailVO.setName("测试商品");
+        detailVO.setPrice(1999L);
+        detailVO.setImage("test.png");
+        detailVO.setSpec(Map.of("颜色", "黑色"));
+        detailVO.setCommented(commented);
+        return detailVO;
     }
 }

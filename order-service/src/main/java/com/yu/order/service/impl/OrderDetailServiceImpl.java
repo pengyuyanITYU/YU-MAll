@@ -54,6 +54,7 @@ public class OrderDetailServiceImpl extends ServiceImpl<OrderDetailMapper, Order
             orderDetailVO.setSpec(orderDetail.getSpec());
             orderDetailVO.setPrice(orderDetail.getPrice());
             orderDetailVO.setImage(orderDetail.getImage());
+            orderDetailVO.setCommented(orderDetail.isCommented());
             return orderDetailVO;
         }).collect(Collectors.toList());
         log.info("query order details result size={}", orderDetailVOList.size());
@@ -108,6 +109,10 @@ public class OrderDetailServiceImpl extends ServiceImpl<OrderDetailMapper, Order
 
     @Override
     public void deleteByOrderId(Long id) {
+        Long count = lambdaQuery().eq(OrderDetail::getOrderId, id).count();
+        if (count == null || count == 0L) {
+            return;
+        }
         boolean remove = lambdaUpdate().eq(OrderDetail::getOrderId, id).remove();
         if (!remove) {
             log.error("delete order details failed, orderId={}", id);
@@ -117,6 +122,13 @@ public class OrderDetailServiceImpl extends ServiceImpl<OrderDetailMapper, Order
 
     @Override
     public void deleteByOrderIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        Long count = lambdaQuery().in(OrderDetail::getOrderId, ids).count();
+        if (count == null || count == 0L) {
+            return;
+        }
         boolean remove = lambdaUpdate().in(OrderDetail::getOrderId, ids).remove();
         if (!remove) {
             log.error("batch delete order details failed, orderIds={}", ids);
@@ -143,11 +155,21 @@ public class OrderDetailServiceImpl extends ServiceImpl<OrderDetailMapper, Order
             throw new RuntimeException("更新订单明细失败");
         }
 
+        List<OrderDetail> orderDetails = lambdaQuery()
+                .eq(OrderDetail::getOrderId, commentDTO.getOrderId())
+                .list();
+        boolean allCommented = orderDetails != null
+                && !orderDetails.isEmpty()
+                && orderDetails.stream().allMatch(OrderDetail::isCommented);
+        if (!allCommented) {
+            return;
+        }
+
         boolean updateOrder = orderService.lambdaUpdate()
                 .eq(Order::getId, commentDTO.getOrderId())
                 .set(Order::getStatus, OrderStatus.EVALUATED)
                 .set(Order::getCommentTime, LocalDateTime.now())
-                .set(Order::getEndTime, LocalDateTime.now())
+                .set(Order::getUpdateTime, LocalDateTime.now())
                 .update();
         if (!updateOrder) {
             log.error("update order status evaluated failed, orderId={}", commentDTO.getOrderId());

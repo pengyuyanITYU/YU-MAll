@@ -4,6 +4,14 @@ export interface LoginForm {
   rememberMe?: boolean;
 }
 
+export interface RegisterForm {
+  username: string;
+  nickName: string;
+  phone: string;
+  password: string;
+  avatar: string;
+}
+
 export interface LoginResult {
   token: string;
   userId: number;

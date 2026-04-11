@@ -15,6 +15,8 @@ public interface IItemService extends IService<Item> {
 
     TableDataInfo listItem(ItemPageQuery itemPageQuery);
 
+    TableDataInfo listAdminItems(ItemPageQuery itemPageQuery);
+
     ItemDetailVO getItemById(Long id);
 
     ItemDetailVO getItemBySkuId(Long skuId);

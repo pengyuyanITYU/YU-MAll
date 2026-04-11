@@ -62,6 +62,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             Address address = addressResult == null ? null : addressResult.getData();
             List<OrderDetailVO> orderDetailVOList = orderDetailService.getByOrderId(order.getId());
             orderVO.setDetails(orderDetailVOList);
+            orderVO.setCommented(isOrderFullyCommented(orderDetailVOList));
             orderVO.setId(order.getId());
             orderVO.setTotalFee(order.getTotalFee());
             orderVO.setPaymentType(order.getPaymentType());
@@ -184,6 +185,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         List<OrderDetailVO> orderDetailVOList = orderDetailService.getByOrderId(order.getId());
         OrderVO orderVO = new OrderVO();
         orderVO.setDetails(orderDetailVOList);
+        orderVO.setCommented(isOrderFullyCommented(orderDetailVOList));
         orderVO.setTotalFee(order.getTotalFee());
         orderVO.setPaymentType(order.getPaymentType());
         orderVO.setStatus(order.getStatus());
@@ -204,6 +206,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         }
         log.info("查询用户{}的订单={}", userId, orderVO);
         return orderVO;
+    }
+
+    private boolean isOrderFullyCommented(List<OrderDetailVO> orderDetailVOList) {
+        return orderDetailVOList != null
+                && !orderDetailVOList.isEmpty()
+                && orderDetailVOList.stream().allMatch(OrderDetailVO::isCommented);
     }
 
     @Override

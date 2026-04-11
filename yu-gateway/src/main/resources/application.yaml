@@ -17,7 +17,7 @@ spring:
         - id: item
           uri: lb://yu-mall-product-service
           predicates:
-            - Path=/items/**,/admin/items/**,/admin/categories/**,/admin/shops/**,/admin/comments/**,/search/**
+            - Path=/items/**,/shops/**,/search/**
         - id: cart
           uri: lb://yu-mall-order-service
           predicates:
@@ -25,11 +25,15 @@ spring:
         - id: user
           uri: lb://yu-mall-user-center-service
           predicates:
-            - Path=/users/**,/admin/users/**,/upload/**
+            - Path=/users/**,/upload/**
         - id: order
           uri: lb://yu-mall-order-service
           predicates:
-            - Path=/orders/**,/admin/orders/**
+            - Path=/orders/**
+        - id: admin
+          uri: lb://yu-mall-admin-service
+          predicates:
+            - Path=/admin/**,/admins/**
         - id: pay
           uri: lb://yu-mall-pay-service
           predicates:
@@ -74,7 +78,7 @@ knife4j:
         path: /order/**
         url: /v3/api-docs
       - name: Admin Service
-        service-name: admin-service
+        service-name: yu-mall-admin-service
         path: /admin/**
         url: /v3/api-docs
 seata:
@@ -111,6 +115,7 @@ yu:
       - /search/**
       - /users/login
       - /items/**
+      - /shops/**
       - /users/register
       - /upload
       - /comments/all/**

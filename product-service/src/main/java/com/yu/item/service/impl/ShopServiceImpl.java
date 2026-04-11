@@ -65,6 +65,21 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     }
 
     @Override
+    public ShopVO getEnabledShopById(Long id) {
+        if (id == null || id <= 0) {
+            throw new BusinessException("店铺ID不合法");
+        }
+        Shop shop = lambdaQuery()
+                .eq(Shop::getId, id)
+                .eq(Shop::getStatus, 1)
+                .one();
+        if (shop == null) {
+            return null;
+        }
+        return toVO(shop);
+    }
+
+    @Override
     public TableDataInfo listShops(ShopPageQuery query) {
         ShopPageQuery realQuery = query == null ? new ShopPageQuery() : query;
         Page<Shop> page = new Page<>(realQuery.getPageNo(), realQuery.getPageSize());
@@ -91,7 +106,31 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     private ShopVO toVO(Shop shop) {
         ShopVO shopVO = new ShopVO();
         BeanUtils.copyProperties(shop, shopVO);
+        shopVO.setShippingDesc(buildShippingDesc(shop));
         return shopVO;
+    }
+
+    private String buildShippingDesc(Shop shop) {
+        if (shop == null || StrUtil.isBlank(shop.getShippingType())) {
+            return "";
+        }
+        if ("FREE".equals(shop.getShippingType())) {
+            return "包邮";
+        }
+        if ("FIXED".equals(shop.getShippingType())) {
+            return "运费" + formatFen(shop.getShippingFee()) + "元";
+        }
+        if ("THRESHOLD_FREE".equals(shop.getShippingType())) {
+            return "满" + formatFen(shop.getFreeShippingThreshold()) + "元包邮";
+        }
+        return "";
+    }
+
+    private String formatFen(Integer amount) {
+        if (amount == null) {
+            return "0.00";
+        }
+        return String.format("%.2f", amount / 100.0);
     }
 
     private void validateShippingRule(ShopDTO shopDTO) {

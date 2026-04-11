@@ -13,6 +13,7 @@ public class DefaultFeignConfig {
 
     @Bean
     public Logger.Level feignLoggerLevel(){
+//        TODO 注意如果在生产环境最好关掉或者调低级别(如BASIC或NONE,否则极其耗费性能)
         return Logger.Level.FULL;
     }
 

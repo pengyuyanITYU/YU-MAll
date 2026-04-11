@@ -1,9 +1,9 @@
-<template>
+﻿<template>
   <el-card class="page-card" shadow="never">
     <div class="toolbar">
       <el-form :inline="true" :model="query">
-        <el-form-item label="商品名">
-          <el-input v-model="query.name" placeholder="输入商品名" clearable />
+        <el-form-item label="商品名称">
+          <el-input v-model="query.name" placeholder="输入商品名称" clearable />
         </el-form-item>
         <el-form-item label="分类">
           <el-input v-model="query.category" placeholder="输入分类" clearable />
@@ -24,7 +24,7 @@
 
     <el-table :data="rows" stripe v-loading="loading">
       <el-table-column type="index" label="序号" :index="rowIndex" width="80" />
-      <el-table-column prop="name" label="商品名" min-width="200" show-overflow-tooltip />
+      <el-table-column prop="name" label="商品名称" min-width="200" show-overflow-tooltip />
       <el-table-column label="店铺" min-width="180" show-overflow-tooltip>
         <template #default="{ row }">
           <div class="shop-cell">
@@ -45,7 +45,7 @@
       </el-table-column>
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
-          <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '上架' : '下架' }}</el-tag>
+          <el-tag :type="getStatusTagType(row.status)">{{ getStatusText(row.status) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="updateTime" label="更新时间" min-width="170" />
@@ -75,7 +75,7 @@
     <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
       <el-row :gutter="12">
         <el-col :span="12">
-          <el-form-item label="商品名" prop="name">
+          <el-form-item label="商品名称" prop="name">
             <el-input v-model="form.name" />
           </el-form-item>
         </el-col>
@@ -175,12 +175,12 @@
         </el-upload>
       </el-form-item>
 
-      <el-form-item label="SKU列表" required>
+      <el-form-item label="SKU 列表" required>
         <div class="sku-list-editor">
           <div v-for="(sku, skuIndex) in form.skus" :key="sku.localKey" class="sku-card">
             <div class="sku-card-head">
               <span class="sku-title">SKU {{ skuIndex + 1 }}</span>
-              <el-button link type="danger" :disabled="form.skus.length === 1" @click="removeSku(skuIndex)">删除SKU</el-button>
+              <el-button link type="danger" :disabled="form.skus.length === 1" @click="removeSku(skuIndex)">删除 SKU</el-button>
             </div>
 
             <el-row :gutter="12">
@@ -221,15 +221,15 @@
             </div>
           </div>
 
-          <el-button type="primary" plain @click="addSku">+ 新增SKU</el-button>
+          <el-button type="primary" plain @click="addSku">+ 新增 SKU</el-button>
         </div>
       </el-form-item>
 
-      <el-form-item label="详情HTML">
+      <el-form-item label="详情 HTML">
         <el-input v-model="form.detailHtml" type="textarea" :rows="3" />
       </el-form-item>
 
-      <el-form-item label="视频URL">
+      <el-form-item label="视频 URL">
         <el-input v-model="form.videoUrl" />
       </el-form-item>
     </el-form>
@@ -243,8 +243,8 @@
   <el-drawer v-model="detailVisible" title="商品详情" size="520px">
     <template v-if="detailData">
       <el-descriptions :column="1" border>
-        <el-descriptions-item label="商品ID">{{ detailData.id }}</el-descriptions-item>
-        <el-descriptions-item label="商品名">{{ detailData.name }}</el-descriptions-item>
+        <el-descriptions-item label="商品 ID">{{ detailData.id }}</el-descriptions-item>
+        <el-descriptions-item label="商品名称">{{ detailData.name }}</el-descriptions-item>
         <el-descriptions-item label="所属店铺">
           {{ detailData.shopName || '-' }}
           <el-tag v-if="detailData.isSelf === 1" size="small" type="danger" effect="plain">自营</el-tag>
@@ -253,35 +253,38 @@
         <el-descriptions-item label="分类">{{ detailData.category || '-' }}</el-descriptions-item>
         <el-descriptions-item label="品牌">{{ detailData.brand || '-' }}</el-descriptions-item>
         <el-descriptions-item label="价格">¥{{ money(detailData.price) }}</el-descriptions-item>
-        <el-descriptions-item label="轮播图数">{{ detailData.bannerImages?.length || 0 }}</el-descriptions-item>
-        <el-descriptions-item label="SKU数">{{ detailData.skuList?.length || 0 }}</el-descriptions-item>
+        <el-descriptions-item label="状态">{{ getStatusText(detailData.status) }}</el-descriptions-item>
+        <el-descriptions-item label="轮播图数量">{{ detailData.bannerImages?.length || 0 }}</el-descriptions-item>
+        <el-descriptions-item label="SKU 数量">{{ detailData.skuList?.length || 0 }}</el-descriptions-item>
       </el-descriptions>
     </template>
   </el-drawer>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type UploadProps, type UploadRequestOptions, type UploadUserFile } from 'element-plus';
-import { Plus } from '@element-plus/icons-vue';
-import { listCategoriesSimple } from '@/api/categories';
-import { createItem, deleteItem, getItemDetail, listItems, updateItem } from '@/api/items';
-import { listShopSimple } from '@/api/shops';
-import { uploadFile } from '@/api/upload';
-import type { CategoryModel, ItemModel, ShopModel } from '@/types/domain';
+import { onMounted, reactive, ref } from 'vue'
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type UploadProps, type UploadRequestOptions, type UploadUserFile } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
+import { listCategoriesSimple } from '@/api/categories'
+import { createItem, deleteItem, getItemDetail, listItems, updateItem } from '@/api/items'
+import { listShopSimple } from '@/api/shops'
+import { uploadFile } from '@/api/upload'
+import type { CategoryModel, ItemModel, ShopModel } from '@/types/domain'
+
+type ItemStatusValue = number | string | boolean | { value?: ItemStatusValue } | null | undefined
 
 interface SkuEditModel {
-  localKey: string;
-  id?: number | string;
-  price?: number;
-  stock?: number;
-  image: string;
-  specsObj: Record<string, string>;
+  localKey: string
+  id?: number | string
+  price?: number
+  stock?: number
+  image: string
+  specsObj: Record<string, string>
 }
 
-const loading = ref(false);
-const rows = ref<ItemModel[]>([]);
-const total = ref(0);
+const loading = ref(false)
+const rows = ref<ItemModel[]>([])
+const total = ref(0)
 
 const query = reactive({
   pageNo: 1,
@@ -289,42 +292,73 @@ const query = reactive({
   name: '',
   category: '',
   brand: ''
-});
+})
 
-const categoryOptions = ref<CategoryModel[]>([]);
-const shopOptions = ref<ShopModel[]>([]);
+const categoryOptions = ref<CategoryModel[]>([])
+const shopOptions = ref<ShopModel[]>([])
 
-const formVisible = ref(false);
-const submitLoading = ref(false);
-const formRef = ref<FormInstance>();
-const mainImageUploading = ref(false);
-const bannerImageUploading = ref(false);
-const bannerImageFileList = ref<UploadUserFile[]>([]);
-const skuUploadingIndex = ref<number | null>(null);
+const formVisible = ref(false)
+const submitLoading = ref(false)
+const formRef = ref<FormInstance>()
+const mainImageUploading = ref(false)
+const bannerImageUploading = ref(false)
+const bannerImageFileList = ref<UploadUserFile[]>([])
+const skuUploadingIndex = ref<number | null>(null)
 
-let skuKeySeed = 0;
-function nextSkuKey() {
-  skuKeySeed += 1;
-  return `sku-${Date.now()}-${skuKeySeed}`;
+let skuKeySeed = 0
+const nextSkuKey = () => {
+  skuKeySeed += 1
+  return `sku-${Date.now()}-${skuKeySeed}`
 }
 
-function createSku(initial?: Partial<SkuEditModel>): SkuEditModel {
-  return {
-    localKey: nextSkuKey(),
-    id: initial?.id,
-    price: initial?.price,
-    stock: initial?.stock,
-    image: initial?.image || '',
-    specsObj: initial?.specsObj ? { ...initial.specsObj } : {}
-  };
+const createSku = (initial?: Partial<SkuEditModel>): SkuEditModel => ({
+  localKey: nextSkuKey(),
+  id: initial?.id,
+  price: initial?.price,
+  stock: initial?.stock,
+  image: initial?.image || '',
+  specsObj: initial?.specsObj ? { ...initial.specsObj } : {}
+})
+
+const normalizeItemStatus = (status: ItemStatusValue, fallback: 1 | 2 = 2): 1 | 2 => {
+  if (typeof status === 'object' && status !== null && 'value' in status) {
+    return normalizeItemStatus(status.value, fallback)
+  }
+  if (status === true || status === 'true' || status === '上架') {
+    return 1
+  }
+  if (status === false || status === 'false' || status === '下架') {
+    return 2
+  }
+  if (typeof status === 'number') {
+    if (status === 1) {
+      return 1
+    }
+    if (status === 2 || status === 0) {
+      return 2
+    }
+  }
+  if (typeof status === 'string') {
+    const trimmed = status.trim()
+    if (trimmed === '1') {
+      return 1
+    }
+    if (trimmed === '2' || trimmed === '0') {
+      return 2
+    }
+  }
+  return fallback
 }
+
+const getStatusText = (status: ItemStatusValue) => (normalizeItemStatus(status) === 1 ? '上架' : '下架')
+const getStatusTagType = (status: ItemStatusValue) => (normalizeItemStatus(status) === 1 ? 'success' : 'info')
 
 const form = reactive({
   id: undefined as number | string | undefined,
   name: '',
   subTitle: '',
   image: '',
-  status: 1,
+  status: 1 as 1 | 2,
   category: '',
   categoryId: undefined as number | undefined,
   shopId: undefined as number | undefined,
@@ -338,216 +372,213 @@ const form = reactive({
   bannerImagesText: '',
   specTemplate: [] as any[],
   skus: [createSku()] as SkuEditModel[]
-});
+})
 
 const rules: FormRules = {
-  name: [{ required: true, message: '请输入商品名', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
   image: [{ required: true, message: '请上传主图', trigger: 'change' }],
   categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
   shopId: [{ required: true, message: '请选择所属店铺', trigger: 'change' }],
   brand: [{ required: true, message: '请输入品牌', trigger: 'blur' }],
   price: [{ required: true, message: '请输入价格', trigger: 'change' }],
   bannerImagesText: [{ required: true, message: '请上传轮播图', trigger: 'change' }]
-};
-
-const detailVisible = ref(false);
-const detailData = ref<any>(null);
-
-function money(amount?: number) {
-  if (amount === undefined || amount === null) return '0.00';
-  return (Number(amount) / 100).toFixed(2);
 }
 
-function rowIndex(index: number) {
-  return (query.pageNo - 1) * query.pageSize + index + 1;
+const detailVisible = ref(false)
+const detailData = ref<any>(null)
+
+const money = (amount?: number) => {
+  if (amount === undefined || amount === null) {
+    return '0.00'
+  }
+  return (Number(amount) / 100).toFixed(2)
 }
 
-function extractUploadedUrl(response: any) {
-  return response?.data?.url || response?.url || response?.data?.data?.url || '';
-}
+const rowIndex = (index: number) => (query.pageNo - 1) * query.pageSize + index + 1
 
-function syncBannerImagesTextFromList() {
+const extractUploadedUrl = (response: any) => response?.data?.url || response?.url || response?.data?.data?.url || ''
+
+const syncBannerImagesTextFromList = () => {
   form.bannerImagesText = bannerImageFileList.value
     .map((file) => (file.url || '').trim())
     .filter(Boolean)
-    .join('\n');
+    .join('\n')
 }
 
 const beforeImageUpload: UploadProps['beforeUpload'] = (rawFile) => {
-  const isImage = rawFile.type.startsWith('image/');
-  const isLt5M = rawFile.size / 1024 / 1024 < 5;
+  const isImage = rawFile.type.startsWith('image/')
+  const isLt5M = rawFile.size / 1024 / 1024 < 5
   if (!isImage) {
-    ElMessage.error('只允许上传图片文件');
-    return false;
+    ElMessage.error('只允许上传图片文件')
+    return false
   }
   if (!isLt5M) {
-    ElMessage.error('图片大小不能超过 5MB');
-    return false;
+    ElMessage.error('图片大小不能超过 5MB')
+    return false
   }
-  return true;
-};
+  return true
+}
 
-async function uploadMainImage(options: UploadRequestOptions) {
-  mainImageUploading.value = true;
+const uploadMainImage = async (options: UploadRequestOptions) => {
+  mainImageUploading.value = true
   try {
-    const res = await uploadFile(options.file as File);
-    const url = extractUploadedUrl(res);
+    const res = await uploadFile(options.file as File)
+    const url = extractUploadedUrl(res)
     if (!url) {
-      throw new Error('上传结果缺少图片地址');
+      throw new Error('上传结果缺少图片地址')
     }
-    form.image = url;
-    options.onSuccess?.(res as any);
-    ElMessage.success('主图上传成功');
+    form.image = url
+    options.onSuccess?.(res as any)
+    ElMessage.success('主图上传成功')
   } catch (error) {
-    options.onError?.(error as any);
-    ElMessage.error('主图上传失败');
+    options.onError?.(error as any)
+    ElMessage.error('主图上传失败')
   } finally {
-    mainImageUploading.value = false;
+    mainImageUploading.value = false
   }
 }
 
-async function uploadBannerImage(options: UploadRequestOptions) {
-  bannerImageUploading.value = true;
+const uploadBannerImage = async (options: UploadRequestOptions) => {
+  bannerImageUploading.value = true
   try {
-    const res = await uploadFile(options.file as File);
-    const url = extractUploadedUrl(res);
+    const res = await uploadFile(options.file as File)
+    const url = extractUploadedUrl(res)
     if (!url) {
-      throw new Error('上传结果缺少图片地址');
+      throw new Error('上传结果缺少图片地址')
     }
-    options.onSuccess?.({ ...res, data: { ...(res as any).data, url } } as any);
-    ElMessage.success('轮播图上传成功');
+    options.onSuccess?.({ ...res, data: { ...(res as any).data, url } } as any)
+    ElMessage.success('轮播图上传成功')
   } catch (error) {
-    options.onError?.(error as any);
-    ElMessage.error('轮播图上传失败');
+    options.onError?.(error as any)
+    ElMessage.error('轮播图上传失败')
   } finally {
-    bannerImageUploading.value = false;
+    bannerImageUploading.value = false
   }
 }
 
 const handleBannerUploadSuccess: UploadProps['onSuccess'] = (response, uploadFile) => {
-  const url = extractUploadedUrl(response);
+  const url = extractUploadedUrl(response)
   if (!url) {
-    ElMessage.error('轮播图地址解析失败');
-    return;
+    ElMessage.error('轮播图地址解析失败')
+    return
   }
-  uploadFile.url = url;
-  syncBannerImagesTextFromList();
-};
+  uploadFile.url = url
+  syncBannerImagesTextFromList()
+}
 
 const handleBannerRemove: UploadProps['onRemove'] = () => {
-  syncBannerImagesTextFromList();
-};
+  syncBannerImagesTextFromList()
+}
 
-async function uploadSkuImage(options: UploadRequestOptions, skuIndex: number) {
-  skuUploadingIndex.value = skuIndex;
+const uploadSkuImage = async (options: UploadRequestOptions, skuIndex: number) => {
+  skuUploadingIndex.value = skuIndex
   try {
-    const res = await uploadFile(options.file as File);
-    const url = extractUploadedUrl(res);
+    const res = await uploadFile(options.file as File)
+    const url = extractUploadedUrl(res)
     if (!url) {
-      throw new Error('上传结果缺少图片地址');
+      throw new Error('上传结果缺少图片地址')
     }
-    const sku = form.skus[skuIndex];
+    const sku = form.skus[skuIndex]
     if (sku) {
-      sku.image = url;
+      sku.image = url
     }
-    options.onSuccess?.(res as any);
-    ElMessage.success('SKU图片上传成功');
+    options.onSuccess?.(res as any)
+    ElMessage.success('SKU 图片上传成功')
   } catch (error) {
-    options.onError?.(error as any);
-    ElMessage.error('SKU图片上传失败');
+    options.onError?.(error as any)
+    ElMessage.error('SKU 图片上传失败')
   } finally {
-    skuUploadingIndex.value = null;
+    skuUploadingIndex.value = null
   }
 }
 
-async function load() {
-  loading.value = true;
+const load = async () => {
+  loading.value = true
   try {
-    const res = await listItems(query);
-    rows.value = res.rows || [];
-    total.value = res.total || 0;
+    const res = await listItems({ ...query })
+    rows.value = Array.isArray(res.rows) ? res.rows : []
+    total.value = Number(res.total || 0)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
-async function loadCategories() {
-  const res = await listCategoriesSimple();
+const loadCategories = async () => {
+  const res = await listCategoriesSimple()
   if (res.code === 200 && Array.isArray(res.data)) {
-    categoryOptions.value = res.data;
+    categoryOptions.value = res.data
   }
 }
 
-async function loadShops() {
-  const res = await listShopSimple();
-  if (res.code === 200 && Array.isArray(res.data)) {
-    shopOptions.value = res.data;
-  }
+const loadShops = async () => {
+  const res = await listShopSimple()
+  const data = Array.isArray(res?.data) ? res.data : []
+  shopOptions.value = data
 }
 
-function onCategoryChange(value?: number) {
+const onCategoryChange = (value?: number) => {
   if (value === undefined || value === null) {
-    form.category = '';
-    return;
+    form.category = ''
+    return
   }
-  const matched = categoryOptions.value.find((c) => c.id === Number(value));
-  form.category = matched?.name || '';
+  const matched = categoryOptions.value.find((c) => c.id === Number(value))
+  form.category = matched?.name || ''
 }
 
-function search() {
-  query.pageNo = 1;
-  load();
+const search = () => {
+  query.pageNo = 1
+  load()
 }
 
-function reset() {
-  query.pageNo = 1;
-  query.pageSize = 10;
-  query.name = '';
-  query.category = '';
-  query.brand = '';
-  load();
+const reset = () => {
+  query.pageNo = 1
+  query.pageSize = 10
+  query.name = ''
+  query.category = ''
+  query.brand = ''
+  load()
 }
 
-function resetForm() {
-  form.id = undefined;
-  form.name = '';
-  form.subTitle = '';
-  form.image = '';
-  form.status = 1;
-  form.category = '';
-  form.categoryId = undefined;
-  form.shopId = undefined;
-  form.brand = '';
-  form.price = undefined;
-  form.originalPrice = undefined;
-  form.stock = undefined;
-  form.tags = '';
-  form.detailHtml = '';
-  form.videoUrl = '';
-  form.bannerImagesText = '';
-  bannerImageFileList.value = [];
-  form.specTemplate = [];
-  form.skus = [createSku()];
+const resetForm = () => {
+  form.id = undefined
+  form.name = ''
+  form.subTitle = ''
+  form.image = ''
+  form.status = 1
+  form.category = ''
+  form.categoryId = undefined
+  form.shopId = undefined
+  form.brand = ''
+  form.price = undefined
+  form.originalPrice = undefined
+  form.stock = undefined
+  form.tags = ''
+  form.detailHtml = ''
+  form.videoUrl = ''
+  form.bannerImagesText = ''
+  bannerImageFileList.value = []
+  form.specTemplate = []
+  form.skus = [createSku()]
 }
 
-function openCreate() {
-  resetForm();
-  formVisible.value = true;
+const openCreate = () => {
+  resetForm()
+  formVisible.value = true
 }
 
-function addSku() {
-  form.skus.push(createSku({ image: form.image || '' }));
+const addSku = () => {
+  form.skus.push(createSku({ image: form.image || '' }))
 }
 
-function removeSku(index: number) {
+const removeSku = (index: number) => {
   if (form.skus.length === 1) {
-    form.skus[0] = createSku({ image: form.image || '' });
-    return;
+    form.skus[0] = createSku({ image: form.image || '' })
+    return
   }
-  form.skus.splice(index, 1);
+  form.skus.splice(index, 1)
 }
 
-function addSkuSpec(skuIndex: number) {
+const addSkuSpec = (skuIndex: number) => {
   ElMessageBox.prompt('请输入规格名称', '添加规格', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
@@ -555,123 +586,129 @@ function addSkuSpec(skuIndex: number) {
     inputErrorMessage: '规格名称不能为空'
   })
     .then(({ value }) => {
-      const sku = form.skus[skuIndex];
-      if (!sku) return;
+      const sku = form.skus[skuIndex]
+      if (!sku) {
+        return
+      }
       if (!Object.prototype.hasOwnProperty.call(sku.specsObj, value)) {
-        sku.specsObj[value] = '';
+        sku.specsObj[value] = ''
       }
     })
-    .catch(() => {});
+    .catch(() => undefined)
 }
 
-function deleteSkuSpec(skuIndex: number, key: string) {
-  const sku = form.skus[skuIndex];
-  if (!sku) return;
-  delete sku.specsObj[key];
+const deleteSkuSpec = (skuIndex: number, key: string) => {
+  const sku = form.skus[skuIndex]
+  if (!sku) {
+    return
+  }
+  delete sku.specsObj[key]
 }
 
-function sanitizeSpecs(specsObj: Record<string, string> | undefined) {
-  if (!specsObj) return {};
+const sanitizeSpecs = (specsObj: Record<string, string> | undefined) => {
+  if (!specsObj) {
+    return {}
+  }
   return Object.entries(specsObj).reduce<Record<string, string>>((acc, [key, value]) => {
-    const specKey = (key || '').trim();
-    const specValue = (value || '').trim();
+    const specKey = (key || '').trim()
+    const specValue = (value || '').trim()
     if (specKey && specValue) {
-      acc[specKey] = specValue;
+      acc[specKey] = specValue
     }
-    return acc;
-  }, {});
+    return acc
+  }, {})
 }
 
-function parseBannerImages(text: string): string[] {
+const parseBannerImages = (text: string): string[] => {
   return text
     .split(/[\n,，]/)
     .map((item) => item.trim())
-    .filter(Boolean);
+    .filter(Boolean)
 }
 
-function toOptionalNumber(value?: number) {
+const toOptionalNumber = (value?: number) => {
   if (value === undefined || value === null) {
-    return undefined;
+    return undefined
   }
-  return Number(value);
+  return Number(value)
 }
 
-function validateSkuList() {
+const validateSkuList = () => {
   if (!Array.isArray(form.skus) || form.skus.length === 0) {
-    ElMessage.error('请至少添加一个SKU');
-    return false;
+    ElMessage.error('请至少添加一个 SKU')
+    return false
   }
 
-  const signatureSet = new Set<string>();
+  const signatureSet = new Set<string>()
   for (let i = 0; i < form.skus.length; i += 1) {
-    const sku = form.skus[i];
+    const sku = form.skus[i]
     if (sku.price === undefined || sku.price === null) {
-      ElMessage.error(`请填写 SKU ${i + 1} 的价格`);
-      return false;
+      ElMessage.error(`请填写 SKU ${i + 1} 的价格`)
+      return false
     }
     if (sku.stock === undefined || sku.stock === null) {
-      ElMessage.error(`请填写 SKU ${i + 1} 的库存`);
-      return false;
+      ElMessage.error(`请填写 SKU ${i + 1} 的库存`)
+      return false
     }
-    const specs = sanitizeSpecs(sku.specsObj);
+    const specs = sanitizeSpecs(sku.specsObj)
     if (Object.keys(specs).length === 0) {
-      ElMessage.error(`请填写 SKU ${i + 1} 的规格`);
-      return false;
+      ElMessage.error(`请填写 SKU ${i + 1} 的规格`)
+      return false
     }
     const signature = Object.entries(specs)
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([key, value]) => `${key}:${value}`)
-      .join('|');
+      .join('|')
     if (signatureSet.has(signature)) {
-      ElMessage.error(`SKU ${i + 1} 的规格与其他 SKU 重复`);
-      return false;
+      ElMessage.error(`SKU ${i + 1} 的规格与其他 SKU 重复`)
+      return false
     }
-    signatureSet.add(signature);
+    signatureSet.add(signature)
   }
 
-  return true;
+  return true
 }
 
-async function openEdit(row: ItemModel) {
-  const res = await getItemDetail(row.id);
+const openEdit = async (row: ItemModel) => {
+  const res = await getItemDetail(row.id)
   if (res.code !== 200 || !res.data) {
-    return;
+    return
   }
 
-  const detail = res.data;
-  resetForm();
-  form.id = detail.id;
-  form.name = detail.name || '';
-  form.subTitle = detail.subTitle || '';
-  form.image = detail.image || '';
-  form.status = detail.status ?? 1;
-  form.category = detail.category || '';
-  form.categoryId = detail.categoryId;
-  form.shopId = detail.shopId ? Number(detail.shopId) : undefined;
+  const detail = res.data
+  resetForm()
+  form.id = detail.id
+  form.name = detail.name || ''
+  form.subTitle = detail.subTitle || ''
+  form.image = detail.image || ''
+  form.status = normalizeItemStatus(detail.status, 1)
+  form.category = detail.category || ''
+  form.categoryId = detail.categoryId
+  form.shopId = detail.shopId ? Number(detail.shopId) : undefined
   if (form.categoryId !== undefined && form.categoryId !== null) {
-    onCategoryChange(form.categoryId);
+    onCategoryChange(form.categoryId)
   } else if (form.category) {
-    const matchedCategory = categoryOptions.value.find((c) => c.name === form.category);
+    const matchedCategory = categoryOptions.value.find((c) => c.name === form.category)
     if (matchedCategory) {
-      form.categoryId = matchedCategory.id;
-      onCategoryChange(matchedCategory.id);
+      form.categoryId = matchedCategory.id
+      onCategoryChange(matchedCategory.id)
     }
   }
-  form.brand = detail.brand || '';
-  form.price = detail.price;
-  form.originalPrice = detail.originalPrice;
-  form.stock = detail.stock;
-  form.tags = detail.tags || '';
-  form.detailHtml = detail.detailHtml || '';
-  form.videoUrl = detail.videoUrl || '';
-  form.specTemplate = Array.isArray(detail.specTemplate) ? [...detail.specTemplate] : [];
-  const bannerImages = Array.isArray(detail.bannerImages) ? detail.bannerImages.filter(Boolean) : [];
-  form.bannerImagesText = bannerImages.join('\n');
+  form.brand = detail.brand || ''
+  form.price = detail.price
+  form.originalPrice = detail.originalPrice
+  form.stock = detail.stock
+  form.tags = detail.tags || ''
+  form.detailHtml = detail.detailHtml || ''
+  form.videoUrl = detail.videoUrl || ''
+  form.specTemplate = Array.isArray(detail.specTemplate) ? [...detail.specTemplate] : []
+  const bannerImages = Array.isArray(detail.bannerImages) ? detail.bannerImages.filter(Boolean) : []
+  form.bannerImagesText = bannerImages.join('\n')
   bannerImageFileList.value = bannerImages.map((url: string, index: number) => ({
-    name: 'banner-' + (index + 1),
+    name: `banner-${index + 1}`,
     url,
     status: 'success'
-  }));
+  }))
 
   if (Array.isArray(detail.skuList) && detail.skuList.length > 0) {
     form.skus = detail.skuList.map((sku: any) =>
@@ -682,33 +719,33 @@ async function openEdit(row: ItemModel) {
         image: sku.image || '',
         specsObj: sanitizeSpecs(sku.specs)
       })
-    );
+    )
   } else {
-    form.skus = [createSku({ image: form.image || '' })];
+    form.skus = [createSku({ image: form.image || '' })]
   }
 
-  formVisible.value = true;
+  formVisible.value = true
 }
 
-function buildPayload() {
+const buildPayload = () => {
   const payloadSkus = form.skus.map((sku) => {
     const payloadSku: any = {
       specs: sanitizeSpecs(sku.specsObj),
       price: Number(sku.price),
       stock: Number(sku.stock),
       image: sku.image || form.image
-    };
-    if (sku.id !== undefined && sku.id !== null) {
-      payloadSku.id = Number(sku.id);
     }
-    return payloadSku;
-  });
+    if (sku.id !== undefined && sku.id !== null) {
+      payloadSku.id = Number(sku.id)
+    }
+    return payloadSku
+  })
 
   const payload: any = {
     name: form.name,
     subTitle: form.subTitle,
     image: form.image,
-    status: form.status,
+    status: normalizeItemStatus(form.status, 1),
     category: categoryOptions.value.find((c) => c.id === form.categoryId)?.name || form.category,
     categoryId: form.categoryId,
     shopId: form.shopId,
@@ -722,54 +759,57 @@ function buildPayload() {
     bannerImages: parseBannerImages(form.bannerImagesText),
     specTemplate: Array.isArray(form.specTemplate) ? form.specTemplate : [],
     skus: payloadSkus
-  };
+  }
 
   if (form.id) {
-    payload.id = form.id;
+    payload.id = form.id
   }
-  return payload;
+  return payload
 }
 
-async function submit() {
-  if (!formRef.value) return;
-  const valid = await formRef.value.validate().catch(() => false);
-  if (!valid) return;
-  if (!validateSkuList()) return;
+const submit = async () => {
+  if (!formRef.value) {
+    return
+  }
+  const valid = await formRef.value.validate().catch(() => false)
+  if (!valid || !validateSkuList()) {
+    return
+  }
 
-  submitLoading.value = true;
+  submitLoading.value = true
   try {
-    const payload = buildPayload();
-    const res = form.id ? await updateItem(payload) : await createItem(payload);
+    const payload = buildPayload()
+    const res = form.id ? await updateItem(payload) : await createItem(payload)
     if (res.code === 200) {
-      ElMessage.success(form.id ? '更新成功' : '新增成功');
-      formVisible.value = false;
-      load();
+      ElMessage.success(form.id ? '更新成功' : '新增成功')
+      formVisible.value = false
+      load()
     }
   } finally {
-    submitLoading.value = false;
+    submitLoading.value = false
   }
 }
 
-async function remove(row: ItemModel) {
-  await ElMessageBox.confirm(`确认删除商品「${row.name}」吗？`, '提示', { type: 'warning' });
-  const res = await deleteItem(row.id);
+const remove = async (row: ItemModel) => {
+  await ElMessageBox.confirm(`确认删除商品“${row.name}”吗？`, '提示', { type: 'warning' })
+  const res = await deleteItem(row.id)
   if (res.code === 200) {
-    ElMessage.success('删除成功');
-    load();
+    ElMessage.success('删除成功')
+    load()
   }
 }
 
-async function showDetail(row: ItemModel) {
-  const res = await getItemDetail(row.id);
+const showDetail = async (row: ItemModel) => {
+  const res = await getItemDetail(row.id)
   if (res.code === 200 && res.data) {
-    detailData.value = res.data;
-    detailVisible.value = true;
+    detailData.value = res.data
+    detailVisible.value = true
   }
 }
 
 onMounted(async () => {
-  await Promise.all([load(), loadCategories(), loadShops()]);
-});
+  await Promise.all([load(), loadCategories(), loadShops()])
+})
 </script>
 
 <style scoped>
