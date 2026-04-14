@@ -16,6 +16,7 @@ class InternalAdminFeignClientTest {
     void internalAdminClientsShouldTargetOwningServices() {
         assertFeignService(InternalAdminItemClient.class, "yu-mall-product-service");
         assertFeignService(InternalAdminCategoryClient.class, "yu-mall-product-service");
+        assertFeignService(InternalAdminBrandClient.class, "yu-mall-product-service");
         assertFeignService(InternalAdminShopClient.class, "yu-mall-product-service");
         assertFeignService(InternalAdminCommentClient.class, "yu-mall-product-service");
         assertFeignService(InternalAdminUserClient.class, "yu-mall-user-center-service");
@@ -27,6 +28,7 @@ class InternalAdminFeignClientTest {
         assertUniqueContextIds(
                 InternalAdminItemClient.class,
                 InternalAdminCategoryClient.class,
+                InternalAdminBrandClient.class,
                 InternalAdminShopClient.class,
                 InternalAdminCommentClient.class,
                 InternalAdminUserClient.class,

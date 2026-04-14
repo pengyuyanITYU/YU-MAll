@@ -133,7 +133,9 @@
       <el-row :gutter="12">
         <el-col :span="12">
           <el-form-item label="品牌" prop="brand">
-            <el-input v-model="form.brand" />
+            <el-select v-model="form.brand" clearable filterable placeholder="请选择品牌" style="width: 100%">
+              <el-option v-for="brand in brandOptions" :key="brand.id" :label="brand.name" :value="brand.name" />
+            </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -265,11 +267,12 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type UploadProps, type UploadRequestOptions, type UploadUserFile } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
+import { listBrandsSimple } from '@/api/brands'
 import { listCategoriesSimple } from '@/api/categories'
 import { createItem, deleteItem, getItemDetail, listItems, updateItem } from '@/api/items'
 import { listShopSimple } from '@/api/shops'
 import { uploadFile } from '@/api/upload'
-import type { CategoryModel, ItemModel, ShopModel } from '@/types/domain'
+import type { BrandModel, CategoryModel, ItemModel, ShopModel } from '@/types/domain'
 
 type ItemStatusValue = number | string | boolean | { value?: ItemStatusValue } | null | undefined
 
@@ -295,6 +298,7 @@ const query = reactive({
 })
 
 const categoryOptions = ref<CategoryModel[]>([])
+const brandOptions = ref<BrandModel[]>([])
 const shopOptions = ref<ShopModel[]>([])
 
 const formVisible = ref(false)
@@ -507,6 +511,13 @@ const loadCategories = async () => {
   const res = await listCategoriesSimple()
   if (res.code === 200 && Array.isArray(res.data)) {
     categoryOptions.value = res.data
+  }
+}
+
+const loadBrands = async () => {
+  const res = await listBrandsSimple()
+  if (res.code === 200 && Array.isArray(res.data)) {
+    brandOptions.value = res.data
   }
 }
 
@@ -808,7 +819,7 @@ const showDetail = async (row: ItemModel) => {
 }
 
 onMounted(async () => {
-  await Promise.all([load(), loadCategories(), loadShops()])
+  await Promise.all([load(), loadCategories(), loadBrands(), loadShops()])
 })
 </script>
 

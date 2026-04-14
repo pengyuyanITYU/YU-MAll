@@ -79,6 +79,13 @@ export interface CategoryModel {
   updateTime?: string;
 }
 
+export interface BrandModel {
+  id: number;
+  name: string;
+  createTime?: string;
+  updateTime?: string;
+}
+
 export interface OrderDetailModel {
   itemId: number;
   num: number;

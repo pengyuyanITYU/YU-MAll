@@ -35,6 +35,7 @@
               <el-menu-item index="/items">商品列表</el-menu-item>
               <el-menu-item index="/shops">店铺管理</el-menu-item>
               <el-menu-item index="/categories">分类管理</el-menu-item>
+              <el-menu-item index="/brands">品牌管理</el-menu-item>
             </el-sub-menu>
 
             <el-sub-menu index="orders">

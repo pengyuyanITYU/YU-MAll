@@ -1,8 +1,9 @@
 <template>
   <div class="login-page">
-    <div class="login-grid"></div>
-    <div class="bg-orb orb-left"></div>
-    <div class="bg-orb orb-right"></div>
+    <!-- 极简模式下去除装饰性网格和光球，保留节点以防影响原结构 -->
+    <div class="login-grid" style="display: none;"></div>
+    <div class="bg-orb orb-left" style="display: none;"></div>
+    <div class="bg-orb orb-right" style="display: none;"></div>
 
     <div class="auth-shell">
       <section class="auth-hero">
@@ -10,16 +11,15 @@
           <div class="hero-brand-mark">YU</div>
           <div class="hero-brand-copy">
             <span class="hero-brand-kicker">YU-MALL ADMIN</span>
-            <h1 class="hero-brand-title">让后台登录页看起来像真正的控制台入口</h1>
+            <h1 class="hero-brand-title">全场景电商管理后台</h1>
             <p class="hero-brand-text">
-              统一接入商品、订单、分类、评论与店铺管理，关键链路在进入控制台前就建立清晰认知。
+              一站式统筹商品、订单与运营数据。
             </p>
           </div>
         </div>
 
         <div class="hero-metrics">
           <article v-for="metric in heroMetrics" :key="metric.label" class="hero-metric">
-            <component :is="metric.icon" class="hero-metric-icon" />
             <strong class="hero-metric-value">{{ metric.value }}</strong>
             <span class="hero-metric-label">{{ metric.label }}</span>
           </article>
@@ -32,7 +32,6 @@
             </div>
             <div class="hero-feature-copy">
               <strong class="hero-feature-title">{{ feature.title }}</strong>
-              <p class="hero-feature-text">{{ feature.text }}</p>
             </div>
           </article>
         </div>
@@ -42,48 +41,47 @@
         <div class="auth-panel-surface">
           <div class="auth-mode-switch" role="tablist" aria-label="认证模式切换">
             <button
-              type="button"
-              class="auth-mode-button"
-              :class="{ 'is-active': activeMode === 'login' }"
-              :aria-pressed="activeMode === 'login'"
-              @click="switchAuthMode('login')"
+                type="button"
+                class="auth-mode-button"
+                :class="{ 'is-active': activeMode === 'login' }"
+                :aria-pressed="activeMode === 'login'"
+                @click="switchAuthMode('login')"
             >
               登录
             </button>
             <button
-              type="button"
-              class="auth-mode-button"
-              :class="{ 'is-active': activeMode === 'register' }"
-              :aria-pressed="activeMode === 'register'"
-              @click="switchAuthMode('register')"
+                type="button"
+                class="auth-mode-button"
+                :class="{ 'is-active': activeMode === 'register' }"
+                :aria-pressed="activeMode === 'register'"
+                @click="switchAuthMode('register')"
             >
               注册
             </button>
           </div>
 
           <div class="auth-panel-header">
-            <span class="auth-panel-kicker">{{ panelKicker }}</span>
             <h2 class="auth-panel-title">{{ panelTitle }}</h2>
             <p class="auth-panel-description">{{ panelDescription }}</p>
           </div>
 
           <Transition name="form-switch" mode="out-in">
             <el-form
-              v-if="activeMode === 'login'"
-              ref="loginFormRef"
-              key="login-form"
-              :model="loginForm"
-              :rules="loginRules"
-              label-position="top"
-              class="auth-form"
-              @keyup.enter="submit"
+                v-if="activeMode === 'login'"
+                ref="loginFormRef"
+                key="login-form"
+                :model="loginForm"
+                :rules="loginRules"
+                label-position="top"
+                class="auth-form"
+                @keyup.enter="submit"
             >
               <el-form-item label="用户名" prop="username">
                 <el-input
-                  v-model.trim="loginForm.username"
-                  size="large"
-                  placeholder="请输入管理员用户名"
-                  autocomplete="username"
+                    v-model.trim="loginForm.username"
+                    size="large"
+                    placeholder="请输入管理员用户名"
+                    autocomplete="username"
                 >
                   <template #prefix>
                     <el-icon><User /></el-icon>
@@ -93,12 +91,12 @@
 
               <el-form-item label="密码" prop="password">
                 <el-input
-                  v-model="loginForm.password"
-                  size="large"
-                  type="password"
-                  show-password
-                  placeholder="请输入登录密码"
-                  autocomplete="current-password"
+                    v-model="loginForm.password"
+                    size="large"
+                    type="password"
+                    show-password
+                    placeholder="请输入登录密码"
+                    autocomplete="current-password"
                 >
                   <template #prefix>
                     <el-icon><Lock /></el-icon>
@@ -112,32 +110,32 @@
               </div>
 
               <el-button
-                type="primary"
-                size="large"
-                class="submit-btn"
-                :loading="loading"
-                @click="submit"
+                  type="primary"
+                  size="large"
+                  class="submit-btn"
+                  :loading="loading"
+                  @click="submit"
               >
                 进入控制台
               </el-button>
             </el-form>
 
             <el-form
-              v-else
-              ref="registerFormRef"
-              key="register-form"
-              :model="registerForm"
-              :rules="registerRules"
-              label-position="top"
-              class="auth-form"
-              @keyup.enter="submit"
+                v-else
+                ref="registerFormRef"
+                key="register-form"
+                :model="registerForm"
+                :rules="registerRules"
+                label-position="top"
+                class="auth-form"
+                @keyup.enter="submit"
             >
               <el-form-item label="用户名" prop="username">
                 <el-input
-                  v-model.trim="registerForm.username"
-                  size="large"
-                  placeholder="设置管理员登录名"
-                  autocomplete="username"
+                    v-model.trim="registerForm.username"
+                    size="large"
+                    placeholder="设置管理员登录名"
+                    autocomplete="username"
                 >
                   <template #prefix>
                     <el-icon><User /></el-icon>
@@ -148,10 +146,10 @@
               <div class="auth-form-grid">
                 <el-form-item label="显示名称" prop="nickName">
                   <el-input
-                    v-model.trim="registerForm.nickName"
-                    size="large"
-                    placeholder="用于页面展示"
-                    autocomplete="nickname"
+                      v-model.trim="registerForm.nickName"
+                      size="large"
+                      placeholder="用于页面展示"
+                      autocomplete="nickname"
                   >
                     <template #prefix>
                       <el-icon><Promotion /></el-icon>
@@ -161,11 +159,11 @@
 
                 <el-form-item label="手机号" prop="phone">
                   <el-input
-                    v-model.trim="registerForm.phone"
-                    size="large"
-                    placeholder="请输入 11 位手机号"
-                    autocomplete="tel"
-                    inputmode="numeric"
+                      v-model.trim="registerForm.phone"
+                      size="large"
+                      placeholder="请输入手机号"
+                      autocomplete="tel"
+                      inputmode="numeric"
                   >
                     <template #prefix>
                       <el-icon><Iphone /></el-icon>
@@ -176,12 +174,12 @@
 
               <el-form-item label="密码" prop="password">
                 <el-input
-                  v-model="registerForm.password"
-                  size="large"
-                  type="password"
-                  show-password
-                  placeholder="至少 6 位，注册后自动登录"
-                  autocomplete="new-password"
+                    v-model="registerForm.password"
+                    size="large"
+                    type="password"
+                    show-password
+                    placeholder="至少 6 位，注册后自动登录"
+                    autocomplete="new-password"
                 >
                   <template #prefix>
                     <el-icon><Lock /></el-icon>
@@ -195,13 +193,13 @@
               </div>
 
               <el-button
-                type="primary"
-                size="large"
-                class="submit-btn"
-                :loading="loading"
-                @click="submit"
+                  type="primary"
+                  size="large"
+                  class="submit-btn"
+                  :loading="loading"
+                  @click="submit"
               >
-                创建管理员并进入控制台
+                创建管理员并进入
               </el-button>
             </el-form>
           </Transition>
@@ -267,21 +265,9 @@ const heroMetrics = [
 ];
 
 const heroFeatures = [
-  {
-    title: '订单与发货节奏',
-    text: '进入控制台前就强调数据监控属性，减少普通表单页的割裂感。',
-    icon: Monitor
-  },
-  {
-    title: '商品与分类协同',
-    text: '把日常高频操作映射到入口页面，让认证页更像后台产品的一部分。',
-    icon: DataAnalysis
-  },
-  {
-    title: '权限入口更清晰',
-    text: '登录和注册在一个壳层内切换，避免来回跳页打断操作节奏。',
-    icon: Lock
-  }
+  { title: '全链路业务监控', icon: Monitor },
+  { title: '核心数据多维分析', icon: DataAnalysis },
+  { title: '企业级安全权限', icon: Lock }
 ];
 
 const loginRules: FormRules = {
@@ -308,22 +294,22 @@ const registerRules: FormRules = {
 const panelKicker = computed(() => (activeMode.value === 'login' ? 'AUTH SIGN IN' : 'AUTH REGISTER'));
 const panelTitle = computed(() => (activeMode.value === 'login' ? '登录管理端' : '注册管理员'));
 const panelDescription = computed(() =>
-  activeMode.value === 'login'
-    ? '输入管理员账号后直接进入控制台，查看商品、订单、评论与店铺运营状态。'
-    : '新管理员创建完成后会自动登录，无需再次输入账号密码。'
+    activeMode.value === 'login'
+        ? '输入管理员账号后直接进入控制台，查看商品、订单、评论与店铺运营状态。'
+        : '新管理员创建完成后会自动登录，无需再次输入账号密码。'
 );
 const nextMode = computed<AuthMode>(() => (activeMode.value === 'login' ? 'register' : 'login'));
 const footerText = computed(() =>
-  activeMode.value === 'login' ? '还没有管理员账号？' : '已经有管理员账号？'
+    activeMode.value === 'login' ? '还没有管理员账号？' : '已经有管理员账号？'
 );
 const footerAction = computed(() => (activeMode.value === 'login' ? '立即注册' : '返回登录'));
 
 watch(
-  () => route.path,
-  (path) => {
-    activeMode.value = path === '/register' ? 'register' : 'login';
-  },
-  { immediate: true }
+    () => route.path,
+    (path) => {
+      activeMode.value = path === '/register' ? 'register' : 'login';
+    },
+    { immediate: true }
 );
 
 watch(activeMode, () => {
@@ -408,270 +394,220 @@ async function submitRegister() {
 </script>
 
 <style scoped lang="scss">
+/* 极简背景：纯粹的灰白色 */
 .login-page {
   position: relative;
   min-height: 100vh;
-  overflow: hidden;
-  padding: 32px;
-  background:
-    radial-gradient(circle at 12% 18%, rgba(56, 189, 248, 0.22), transparent 22%),
-    radial-gradient(circle at 88% 24%, rgba(14, 165, 233, 0.16), transparent 26%),
-    linear-gradient(135deg, #07111d 0%, #0c2037 48%, #12365a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fafafa;
+  padding: 24px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
-.login-grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85), transparent 92%);
-}
-
-.bg-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(4px);
-}
-
-.orb-left {
-  top: -120px;
-  left: -60px;
-  width: 320px;
-  height: 320px;
-  background: radial-gradient(circle, rgba(34, 211, 238, 0.32), transparent 70%);
-}
-
-.orb-right {
-  right: -120px;
-  bottom: -160px;
-  width: 420px;
-  height: 420px;
-  background: radial-gradient(circle, rgba(14, 165, 233, 0.28), transparent 68%);
-}
-
+/* 极简外壳：无阴影或极微弱阴影，细边框 */
 .auth-shell {
-  position: relative;
-  z-index: 1;
-  width: min(1160px, 100%);
-  min-height: calc(100vh - 64px);
-  margin: 0 auto;
+  width: 100%;
+  max-width: 1024px;
+  min-height: 640px;
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(360px, 460px);
-  border-radius: 32px;
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(7, 16, 29, 0.42);
-  box-shadow: 0 28px 80px rgba(3, 10, 20, 0.34);
-  backdrop-filter: blur(18px);
+  grid-template-columns: 1fr 420px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #eaeaea;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
 }
 
+/* 左侧信息区：排版为主，去色 */
 .auth-hero {
-  padding: 48px;
+  padding: 56px 48px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 32px;
+  background: #ffffff;
+  border-right: 1px solid #f0f0f0;
 }
 
 .hero-brand {
   display: grid;
-  gap: 22px;
+  gap: 20px;
 }
 
 .hero-brand-mark {
-  width: 68px;
-  height: 68px;
-  border-radius: 22px;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0ea5e9, #38bdf8);
-  color: #f8fafc;
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  box-shadow: 0 18px 34px rgba(14, 165, 233, 0.24);
+  background: #000000;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
 }
 
 .hero-brand-copy {
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 
 .hero-brand-kicker {
   font-size: 12px;
-  letter-spacing: 0.22em;
-  color: #7dd3fc;
-  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #888888;
+  font-weight: 600;
 }
 
 .hero-brand-title {
   margin: 0;
-  max-width: 520px;
-  font-size: clamp(32px, 4vw, 50px);
-  line-height: 1.08;
-  color: #f8fafc;
+  font-size: clamp(24px, 3vw, 32px);
+  line-height: 1.2;
+  color: #111111;
+  font-weight: 600;
 }
 
 .hero-brand-text {
   margin: 0;
-  max-width: 520px;
-  color: rgba(226, 232, 240, 0.82);
-  font-size: 15px;
-  line-height: 1.8;
+  max-width: 440px;
+  color: #666666;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
+/* 数据指标：去图标化，极简线条分割 */
 .hero-metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: 24px;
+  margin-top: 24px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 24px;
 }
 
 .hero-metric {
-  border-radius: 22px;
-  border: 1px solid rgba(125, 211, 252, 0.14);
-  background: linear-gradient(180deg, rgba(8, 18, 34, 0.72), rgba(8, 18, 34, 0.46));
-  padding: 20px;
   display: grid;
-  gap: 10px;
-}
-
-.hero-metric-icon {
-  font-size: 18px;
-  color: #7dd3fc;
+  gap: 4px;
 }
 
 .hero-metric-value {
-  font-size: 26px;
-  color: #f8fafc;
+  font-size: 24px;
+  color: #111111;
   line-height: 1;
+  font-weight: 500;
 }
 
 .hero-metric-label {
-  color: rgba(148, 163, 184, 0.92);
-  font-size: 13px;
+  color: #888888;
+  font-size: 12px;
 }
 
+/* 功能列表：精简为单行标签 */
 .hero-feature-list {
   display: grid;
-  gap: 16px;
+  gap: 0;
+  border-top: 1px solid #f0f0f0;
 }
 
 .hero-feature-card {
-  display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
-  gap: 16px;
-  padding: 18px 20px;
-  border-radius: 22px;
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  background: rgba(15, 23, 42, 0.32);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid #f9f9f9;
+}
+
+.hero-feature-card:last-child {
+  border-bottom: none;
 }
 
 .hero-feature-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
+  font-size: 16px;
+  color: #000000;
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: #38bdf8;
-  background: rgba(14, 165, 233, 0.12);
-  font-size: 20px;
 }
 
 .hero-feature-copy {
-  display: grid;
-  gap: 8px;
+  display: flex;
+  align-items: center;
 }
 
 .hero-feature-title {
-  color: #f8fafc;
-  font-size: 15px;
+  color: #333333;
+  font-size: 14px;
+  font-weight: 500;
 }
 
-.hero-feature-text {
-  margin: 0;
-  color: rgba(148, 163, 184, 0.92);
-  font-size: 13px;
-  line-height: 1.7;
-}
-
+/* 右侧表单区：纯白背景，居中对齐 */
 .auth-panel {
-  padding: 20px;
+  padding: 48px;
   display: flex;
+  align-items: center;
+  background: #fafafa;
 }
 
 .auth-panel-surface {
   width: 100%;
-  border-radius: 28px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.92));
-  padding: 28px;
+  max-width: 320px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 24px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
+/* 切换按钮：下划线极简 Tab */
 .auth-mode-switch {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  padding: 6px;
-  border-radius: 18px;
-  background: #e2e8f0;
+  display: flex;
+  gap: 24px;
+  border-bottom: 1px solid #eaeaea;
+  margin-bottom: 32px;
 }
 
 .auth-mode-button {
-  min-height: 46px;
-  border: none;
-  border-radius: 14px;
   background: transparent;
-  color: #475569;
-  font-size: 14px;
-  font-weight: 700;
+  border: none;
+  padding: 0 0 12px 0;
+  color: #888888;
+  font-size: 15px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.22s ease, color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
-}
-
-.auth-mode-button:focus-visible,
-.auth-panel-footer-action:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.22);
+  position: relative;
+  transition: color 0.2s ease;
 }
 
 .auth-mode-button.is-active {
-  background: linear-gradient(135deg, #0f172a, #1d4ed8);
-  color: #f8fafc;
-  box-shadow: 0 14px 26px rgba(29, 78, 216, 0.24);
+  color: #111111;
+}
+
+.auth-mode-button.is-active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #111111;
 }
 
 .auth-panel-header {
-  display: grid;
-  gap: 12px;
-}
-
-.auth-panel-kicker {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  color: #0284c7;
+  margin-bottom: 32px;
 }
 
 .auth-panel-title {
-  margin: 0;
-  color: #0f172a;
-  font-size: 30px;
-  line-height: 1.15;
+  margin: 0 0 8px;
+  color: #111111;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .auth-panel-description {
   margin: 0;
-  color: #64748b;
-  font-size: 14px;
-  line-height: 1.8;
+  color: #666666;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .auth-form {
@@ -682,23 +618,19 @@ async function submitRegister() {
 .auth-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.auth-form-row {
-  display: flex;
-  align-items: center;
+  gap: 16px;
 }
 
 .auth-form-row-between {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-top: -2px;
-  margin-bottom: 8px;
+  margin-top: -8px;
+  margin-bottom: 16px;
 }
 
 .auth-form-hint {
-  color: #64748b;
+  color: #888888;
   font-size: 12px;
 }
 
@@ -706,129 +638,152 @@ async function submitRegister() {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  border-radius: 16px;
-  padding: 14px 16px;
-  background: #e0f2fe;
-  color: #0c4a6e;
-  font-size: 13px;
-  line-height: 1.7;
+  border-radius: 6px;
+  padding: 12px 14px;
+  background: #f0f0f0;
+  color: #333333;
+  font-size: 12px;
+  line-height: 1.5;
+  margin-bottom: 24px;
 }
 
 .auth-register-tip-icon {
   margin-top: 2px;
-  color: #0284c7;
+  color: #111111;
 }
 
+/* 提交按钮：纯黑，微圆角 */
 .submit-btn {
   width: 100%;
-  min-height: 52px;
+  min-height: 48px;
   border: none;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #0f172a, #1d4ed8);
-  box-shadow: 0 16px 30px rgba(29, 78, 216, 0.22);
-  font-weight: 700;
+  border-radius: 6px;
+  background: #000000;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 500;
+  box-shadow: none;
+  transition: background-color 0.2s ease;
+}
+
+.submit-btn:hover,
+.submit-btn:focus {
+  background: #333333;
+  color: #ffffff;
 }
 
 .auth-panel-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding-top: 4px;
+  justify-content: center;
+  gap: 8px;
+  padding-top: 24px;
 }
 
 .auth-panel-footer-text {
-  color: #64748b;
+  color: #888888;
   font-size: 13px;
 }
 
 .auth-panel-footer-action {
   border: none;
   background: transparent;
-  color: #0369a1;
+  color: #111111;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
-  transition: color 0.22s ease, transform 0.22s ease;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
 .auth-panel-footer-action:hover {
-  color: #1d4ed8;
+  color: #666666;
 }
 
+/* Element Plus 表单组件极简覆盖 */
 .auth-form :deep(.el-form-item) {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .auth-form :deep(.el-form-item__label) {
-  padding-bottom: 8px;
-  color: #0f172a;
+  padding-bottom: 6px;
+  color: #111111;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
+  line-height: 1;
 }
 
 .auth-form :deep(.el-input__wrapper) {
-  min-height: 52px;
-  border-radius: 16px;
-  background: rgba(248, 250, 252, 0.98);
-  box-shadow: inset 0 0 0 1px #d7e2ee;
-  transition: box-shadow 0.22s ease, background-color 0.22s ease, transform 0.22s ease;
+  min-height: 44px;
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px #d9d9d9;
+  padding: 0 12px;
+  transition: box-shadow 0.2s ease;
 }
 
 .auth-form :deep(.el-input__wrapper.is-focus) {
-  background: #ffffff;
-  box-shadow:
-    inset 0 0 0 1px #0ea5e9,
-    0 0 0 4px rgba(14, 165, 233, 0.12);
+  box-shadow: inset 0 0 0 1px #000000 !important;
 }
 
 .auth-form :deep(.el-input__prefix-inner),
-.auth-form :deep(.el-input__icon),
-.auth-form :deep(.el-checkbox__label) {
-  color: #64748b;
+.auth-form :deep(.el-input__icon) {
+  color: #888888;
+  font-size: 16px;
+}
+
+.auth-form :deep(.el-input__wrapper.is-focus .el-input__icon) {
+  color: #111111;
 }
 
 .auth-form :deep(.el-checkbox) {
   min-height: 24px;
+  color: #666666;
+}
+
+.auth-form :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: #000000;
+  border-color: #000000;
+}
+
+.auth-form :deep(.el-checkbox__input.is-checked + .el-checkbox__label) {
+  color: #111111;
 }
 
 .auth-form :deep(.el-form-item.is-error .el-input__wrapper) {
-  box-shadow:
-    inset 0 0 0 1px #ef4444,
-    0 0 0 4px rgba(239, 68, 68, 0.08);
+  box-shadow: inset 0 0 0 1px #e60000 !important;
 }
 
+/* 切换动画 */
 .form-switch-enter-active,
 .form-switch-leave-active {
-  transition: opacity 0.22s ease, transform 0.22s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .form-switch-enter-from {
   opacity: 0;
-  transform: translateX(18px);
+  transform: translateY(8px);
 }
 
 .form-switch-leave-to {
   opacity: 0;
-  transform: translateX(-18px);
+  transform: translateY(-8px);
 }
 
+/* 响应式适配 */
 @media (max-width: 1080px) {
   .login-page {
-    padding: 18px;
+    padding: 16px;
   }
-
   .auth-shell {
-    min-height: auto;
     grid-template-columns: 1fr;
+    min-height: auto;
   }
-
   .auth-hero {
-    padding: 28px 28px 0;
-  }
-
-  .hero-metrics {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 40px 32px;
+    border-right: none;
+    border-bottom: 1px solid #f0f0f0;
   }
 }
 
@@ -836,52 +791,29 @@ async function submitRegister() {
   .login-page {
     padding: 12px;
   }
-
   .auth-shell {
-    border-radius: 24px;
+    border-radius: 8px;
   }
-
   .auth-hero {
-    padding: 22px 22px 0;
-    gap: 20px;
+    padding: 32px 20px;
   }
-
   .hero-brand-title {
-    font-size: 30px;
+    font-size: 22px;
   }
-
-  .hero-metrics,
+  .hero-metrics {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
   .auth-form-grid {
     grid-template-columns: 1fr;
   }
-
-  .hero-feature-card,
-  .auth-panel-surface {
-    border-radius: 20px;
-  }
-
   .auth-panel {
-    padding: 12px;
+    padding: 32px 20px;
   }
-
-  .auth-panel-surface {
-    padding: 22px 18px;
-  }
-
-  .auth-panel-footer,
   .auth-form-row-between {
     flex-direction: column;
     align-items: flex-start;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .auth-mode-button,
-  .auth-panel-footer-action,
-  .auth-form :deep(.el-input__wrapper),
-  .form-switch-enter-active,
-  .form-switch-leave-active {
-    transition: none;
+    gap: 4px;
   }
 }
 </style>

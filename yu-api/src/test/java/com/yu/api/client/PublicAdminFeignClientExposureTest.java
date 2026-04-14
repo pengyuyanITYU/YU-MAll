@@ -45,6 +45,7 @@ class PublicAdminFeignClientExposureTest {
                 "com.yu.api.client.InternalAdminOrderClient",
                 "com.yu.api.client.InternalAdminItemClient",
                 "com.yu.api.client.InternalAdminCategoryClient",
+                "com.yu.api.client.InternalAdminBrandClient",
                 "com.yu.api.client.InternalAdminShopClient",
                 "com.yu.api.client.InternalAdminCommentClient"
         );

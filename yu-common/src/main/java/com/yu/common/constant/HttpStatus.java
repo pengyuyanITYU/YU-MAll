@@ -71,6 +71,10 @@ public class      HttpStatus
      */
     public static final int CONFLICT = 409;
 
+    public static final int PRECONDITION_REQUIRED = 428;
+
+    public static final int TOO_MANY_REQUESTS = 429;
+
     /**
      * 不支持的数据，媒体类型
      */

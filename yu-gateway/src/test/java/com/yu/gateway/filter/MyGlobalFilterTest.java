@@ -72,6 +72,23 @@ class MyGlobalFilterTest {
     }
 
     @Test
+    void shouldAllowUserCaptchaPathWithoutToken() {
+        AuthProperties authProperties = new AuthProperties();
+        authProperties.setExcludePaths(List.of("/users/login", "/users/register", "/users/captcha/**"));
+        JwtProperties jwtProperties = new JwtProperties();
+        JwtTool jwtTool = mock(JwtTool.class);
+        MyGlobalFilter filter = new MyGlobalFilter(authProperties, jwtProperties, jwtTool);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.post("/users/captcha/slider/challenge").build()
+        );
+        GatewayFilterChain chain = serverWebExchange -> Mono.empty();
+
+        filter.filter(exchange, chain).block();
+
+        assertNull(exchange.getResponse().getStatusCode());
+    }
+
+    @Test
     void shouldRejectProtectedPathWithoutToken() {
         AuthProperties authProperties = new AuthProperties();
         authProperties.setExcludePaths(List.of("/users/login"));

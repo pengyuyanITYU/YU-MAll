@@ -144,6 +144,22 @@ public class WebUtils {
         return request.getRemoteAddr();
     }
 
+    public static String getClientIp() {
+        HttpServletRequest request = getRequest();
+        if (request == null) {
+            return StrUtil.EMPTY;
+        }
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (StrUtil.isNotBlank(forwardedFor)) {
+            return StrUtil.trim(forwardedFor.split(",")[0]);
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (StrUtil.isNotBlank(realIp)) {
+            return StrUtil.trim(realIp);
+        }
+        return StrUtil.blankToDefault(request.getRemoteAddr(), StrUtil.EMPTY);
+    }
+
     public static CookieBuilder cookieBuilder(){
         return new CookieBuilder(getRequest(), getResponse());
     }

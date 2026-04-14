@@ -53,6 +53,12 @@ const router = createRouter({
           meta: { title: '分类管理' }
         },
         {
+          path: '/brands',
+          name: 'brands',
+          component: () => import('@/views/brands/BrandManageView.vue'),
+          meta: { title: '品牌管理' }
+        },
+        {
           path: '/orders',
           name: 'orders',
           component: () => import('@/views/orders/OrderManageView.vue'),
