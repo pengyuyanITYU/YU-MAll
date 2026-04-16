@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.yu")
 @MapperScan("com.yu.admin.mapper")
 @EnableFeignClients(basePackages = "com.yu.api.client")
 @EnableFileStorage

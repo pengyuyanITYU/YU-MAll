@@ -2,7 +2,6 @@ package com.yu.gateway.filter;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.AntPathMatcher;
-import com.yu.common.enums.Header;
 import com.yu.gateway.config.AuthProperties;
 import com.yu.gateway.config.JwtProperties;
 import com.yu.gateway.utils.JwtTool;
@@ -15,7 +14,6 @@ import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -60,9 +58,7 @@ public class MyGlobalFilter implements GlobalFilter, Ordered {
             userId = jwtTool.parseToken(token);
         }catch(Exception e){
             log.error("Token validation failed", e);
-            ServerHttpResponse response = exchange.getResponse();
-            response.setStatusCode(HttpStatus.UNAUTHORIZED);
-            return response.setComplete();
+            return GatewayErrorResponseWriter.write(exchange.getResponse(), HttpStatus.UNAUTHORIZED, "登录已过期，请重新登录");
         }
         log.info("Authenticated user {}", userId);
         String userInfo = userId.toString();

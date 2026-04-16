@@ -12,6 +12,10 @@ export function uploadFile(file: File) {
   return post<AjaxResult<UploadFileInfo>>('/upload', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
+    },
+    errorMeta: {
+      silent: true,
+      action: '上传文件'
     }
   });
 }

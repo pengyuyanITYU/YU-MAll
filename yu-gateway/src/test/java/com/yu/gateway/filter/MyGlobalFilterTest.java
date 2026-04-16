@@ -15,6 +15,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -104,6 +105,10 @@ class MyGlobalFilterTest {
         filter.filter(exchange, chain).block();
 
         assertEquals(HttpStatus.UNAUTHORIZED, exchange.getResponse().getStatusCode());
+        assertEquals("application/json", exchange.getResponse().getHeaders().getFirst("Content-Type"));
+        String body = exchange.getResponse().getBodyAsString().block();
+        assertTrue(body.contains("\"code\":401"));
+        assertTrue(body.contains("\"msg\":\"登录已过期，请重新登录\""));
     }
 
     @Test

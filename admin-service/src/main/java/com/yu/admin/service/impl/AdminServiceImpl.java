@@ -2,7 +2,6 @@ package com.yu.admin.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
-import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.BCrypt;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -57,9 +56,13 @@ public class AdminServiceImpl extends ServiceImpl<AdministratorMapper, Administr
 
         log.info("用户登录：{},dto{}", Administratorname, loginFormDTO);
         Administrator Administrator = lambdaQuery().eq(com.yu.admin.domain.po.Administrator::getUsername, Administratorname).one();
-        Assert.notNull(Administrator, "用户不存在");
+        if (Administrator == null) {
+            throw new BusinessException("用户不存在");
+        }
         log.info("用户登录zhe：{}",BCrypt.checkpw(pw, Administrator.getPassword()));
-        Assert.isTrue(BCrypt.checkpw(pw, Administrator.getPassword()), "密码错误");
+        if (!BCrypt.checkpw(pw, Administrator.getPassword())) {
+            throw new BusinessException("密码错误");
+        }
         if(Objects.equals(Administrator.getStatus(), AdministratorStatus.FROZEN)){
             log.warn("用户{}被禁用",AdministratorContext.getUser());
             throw new BusinessException("用户被禁用");

@@ -272,6 +272,7 @@ import { listCategoriesSimple } from '@/api/categories'
 import { createItem, deleteItem, getItemDetail, listItems, updateItem } from '@/api/items'
 import { listShopSimple } from '@/api/shops'
 import { uploadFile } from '@/api/upload'
+import { resolveAdminErrorReason } from '@/utils/request'
 import type { BrandModel, CategoryModel, ItemModel, ShopModel } from '@/types/domain'
 
 type ItemStatusValue = number | string | boolean | { value?: ItemStatusValue } | null | undefined
@@ -436,7 +437,7 @@ const uploadMainImage = async (options: UploadRequestOptions) => {
     ElMessage.success('主图上传成功')
   } catch (error) {
     options.onError?.(error as any)
-    ElMessage.error('主图上传失败')
+    ElMessage.error(`主图上传失败：${resolveAdminErrorReason(error)}`)
   } finally {
     mainImageUploading.value = false
   }
@@ -454,7 +455,7 @@ const uploadBannerImage = async (options: UploadRequestOptions) => {
     ElMessage.success('轮播图上传成功')
   } catch (error) {
     options.onError?.(error as any)
-    ElMessage.error('轮播图上传失败')
+    ElMessage.error(`轮播图上传失败：${resolveAdminErrorReason(error)}`)
   } finally {
     bannerImageUploading.value = false
   }
@@ -490,7 +491,7 @@ const uploadSkuImage = async (options: UploadRequestOptions, skuIndex: number) =
     ElMessage.success('SKU 图片上传成功')
   } catch (error) {
     options.onError?.(error as any)
-    ElMessage.error('SKU 图片上传失败')
+    ElMessage.error(`SKU 图片上传失败：${resolveAdminErrorReason(error)}`)
   } finally {
     skuUploadingIndex.value = null
   }

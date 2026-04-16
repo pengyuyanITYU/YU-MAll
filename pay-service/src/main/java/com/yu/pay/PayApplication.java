@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @MapperScan("com.yu.pay.mapper")
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.yu")
 @EnableFeignClients(basePackages = "com.yu.api.client")
 public class PayApplication {
     public static void main(String[] args) {
