@@ -1,10 +1,18 @@
-import {request} from '@/utils/request';
+import { request, type UserRequestConfig } from '@/utils/request'
 
-interface RegisterForm {
+export interface RegisterForm {
   username: string
   phone: string
   password: string
-
+  avatar: string
+  nickName: string
+  captchaTicket: string
 }
 
-export const register = (RegisterForm:RegisterForm) => request.post('/users/register',RegisterForm);
+export const register = (registerForm: RegisterForm) =>
+  request.post('/users/register', registerForm, {
+    errorMeta: {
+      silent: true,
+      preserveBusinessMessage: true
+    }
+  } as UserRequestConfig)

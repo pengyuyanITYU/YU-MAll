@@ -1,150 +1,165 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { ElMessage } from 'element-plus'
-// 路由懒加载引入
-const Home = () => import('../views/items/Home.vue')
-// const ItemDetail = () => import('../views/ItemDetail.vue')
+import { getOrderFlowHistoryRedirect, shouldBlockOrderFlowBack } from '@/utils/orderFlowHistory'
+
+const Home = () => import('../views/Home.vue')
 const Login = () => import('../views/login/Login.vue')
 const Register = () => import('../views/register/Register.vue')
-
+const AuthPreviewLab = () => import('../views/auth-preview/AuthPreviewLab.vue')
 const ItemDetail = () => import('../views/items/ItemDetail.vue')
-
+const Shop = () => import('../views/shop/Shop.vue')
 const Search = () => import('../views/search/Search.vue')
-
 const User = () => import('../views/user/User.vue')
-
 const Cart = () => import('../views/cart/Cart.vue')
-
 const Checkout = () => import('../views/order/Order.vue')
-
 const OrderDetail = () => import('../views/order/OrderDetail.vue')
-
 const Pay = () => import('../views/pay/index.vue')
+const AiAssistant = () => import('../views/ai/AiAssistant.vue')
+const PublishComment = () => import('@/views/comment/PublishComment.vue')
 
-// 1. 使用 RouteRecordRaw 类型定义路由数组
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
     name: 'Home',
     component: Home,
-    meta: { title: '商城首页 - YU-MAll' }
-  },  
+    meta: { title: 'YU-MALL Home', hideNavBar: true }
+  },
   {
     path: '/login',
     name: 'Login',
     component: Login,
-    meta: { title: '用户登录', hideLayout: true }
+    meta: { title: 'User Login', hideLayout: true }
   },
   {
     path: '/register',
     name: 'Register',
     component: Register,
-    meta: { title: '用户注册', hideLayout: true }
+    meta: { title: 'User Register', hideLayout: true }
+  },
+  {
+    path: '/auth-preview',
+    name: 'AuthPreviewLab',
+    component: AuthPreviewLab,
+    meta: { title: 'Auth Preview Lab', hideLayout: true }
   },
   {
     path: '/item/:id',
     name: 'ItemDetail',
     component: ItemDetail,
-    meta: { title: '商品详情' }
+    meta: { title: 'Item Detail' }
+  },
+  {
+    path: '/shop/:shopId',
+    name: 'Shop',
+    component: Shop,
+    meta: { title: 'Shop Items' }
   },
   {
     path: '/search',
-    name:'Search',
+    name: 'Search',
     component: Search,
-    meta: { title: '商品搜索' }
+    meta: { title: 'Search' }
   },
   {
     path: '/user',
     name: 'User',
     component: User,
-    meta: { title: '用户中心', requiresAuth: true }
+    meta: { title: 'User Center', requiresAuth: true }
   },
   {
     path: '/cart',
     name: 'Cart',
     component: Cart,
-    meta: { title: '购物车' , requiresAuth: true }
+    meta: { title: 'Cart', requiresAuth: true }
   },
   {
     path: '/checkout',
     name: 'Checkout',
     component: Checkout,
-    meta: { title: '确认订单', requiresAuth: true }
-  },{
-    // 订单详情页路由配置
-    // :id 是动态参数，对应订单号
-    path: '/order/:id',
-    name: 'OrderDetail',
-    component: OrderDetail, // 下面提供的详情页组件
-    meta: { title: '订单详情', requiresAuth: true }
+    meta: { title: 'Checkout', requiresAuth: true }
   },
   {
-  path: '/pay',
-  name: 'Pay',
-  component: Pay,
-  meta: { title: '订单支付' }
-},
- {
+    path: '/order/:id',
+    name: 'OrderDetail',
+    component: OrderDetail,
+    meta: { title: 'Order Detail', requiresAuth: true }
+  },
+  {
+    path: '/pay',
+    name: 'Pay',
+    component: Pay,
+    meta: { title: 'Payment' }
+  },
+  {
     path: '/comment/publish',
     name: 'PublishComment',
-    // 建议使用懒加载 (Lazy Loading)，优化首屏加载速度
-    component: () => import('@/views/comment/PublishComment.vue'), 
-    meta: {
-      title: '发表评价',
-      requiresAuth: true // 如果你有登录拦截逻辑，记得加上这个
-    }
+    component: PublishComment,
+    meta: { title: 'Publish Comment', requiresAuth: true }
+  },
+  {
+    path: '/ai-assistant',
+    name: 'AiAssistant',
+    component: AiAssistant,
+    meta: { title: 'AI Assistant' }
   }
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
-  // TS 会自动推断 scrollBehavior 参数的类型，不需要手动写
-  scrollBehavior(to, from, savedPosition) {
-    // 切换页面时自动滚动到顶部
+  scrollBehavior() {
     return { top: 0 }
   }
 })
 
-// 全局后置钩子
+let isPopStateNavigation = false
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('popstate', () => {
+    isPopStateNavigation = true
+  })
+}
+
 router.afterEach((to) => {
-  // 2. 这里需要断言一下类型，或者确保 title 存在
   const title = to.meta.title as string | undefined
   document.title = title || 'YU-Mall'
+  isPopStateNavigation = false
 })
 
-router.beforeEach((to,from,next)=>{
-  if(to.matched.some(record => record.meta.requiresAuth)){
+router.beforeEach((to, from, next) => {
+  if (isPopStateNavigation && shouldBlockOrderFlowBack(to.path)) {
+    const redirectTarget = router.resolve(getOrderFlowHistoryRedirect())
+    next({
+      path: redirectTarget.path,
+      query: redirectTarget.query,
+      hash: redirectTarget.hash,
+      replace: true
+    })
+    return
+  }
+
+  if (to.matched.some((record) => record.meta.requiresAuth)) {
     const loginUser = localStorage.getItem('Authorization')
-    if(loginUser){
+    if (loginUser) {
       next()
+      return
     }
-    else{
-      ElMessage.error('登录过期，请重新登录')
-      next('/login')
-    }
+    ElMessage.error('登录过期，请重新登录')
+    next('/login')
+    return
   }
-  else{
-    next()
-  }
+
+  next()
 })
 
-// 路由错误监听
 router.onError((error) => {
-  const pattern = /Loading chunk (\d)+ failed/g;
-  const isChunkLoadFailed = error.message.match(pattern);
-  
-  // 也可以检查动态导入失败
-  const isImportFailed = error.message.includes('Failed to fetch dynamically imported module');
+  const pattern = /Loading chunk (\d)+ failed/g
+  const isChunkLoadFailed = pattern.test(error.message)
+  const isImportFailed = error.message.includes('Failed to fetch dynamically imported module')
 
   if (isChunkLoadFailed || isImportFailed) {
-    // 防止无限刷新：检查是否刚刚刷新过
-    const targetPath = router.currentRoute.value.fullPath;
-    
-    console.log('资源加载失败，尝试自动刷新...');
-    
-    // 使用 replace 重新加载当前页面，强制从服务器拉取最新资源
-    window.location.reload(); 
+    window.location.reload()
   }
-});
+})
 
 export default router

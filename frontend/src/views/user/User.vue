@@ -133,7 +133,7 @@
 
                 <h3 class="panel-title" style="margin-top: 30px;">
                   最近订单
-                  <el-link type="primary" :underline="false" style="font-size:13px; float:right" @click="handleNavSelect('orders')">查看全部</el-link>
+                  <el-link type="primary" underline="never" style="font-size:13px; float:right" @click="handleNavSelect('orders')">查看全部</el-link>
                 </h3>
                 
                 <div class="recent-orders" v-loading="loadingOrders">
@@ -324,6 +324,7 @@
                   <el-tab-pane :label="`待付款${orderCounts.pay > 0 ? ' ('+orderCounts.pay+')' : ''}`" name="pay"></el-tab-pane>
                   <el-tab-pane :label="`待发货${orderCounts.ship > 0 ? ' ('+orderCounts.ship+')' : ''}`" name="ship"></el-tab-pane>
                   <el-tab-pane :label="`待收货${orderCounts.receive > 0 ? ' ('+orderCounts.receive+')' : ''}`" name="receive"></el-tab-pane>
+                  <el-tab-pane :label="`评价${orderCounts.review > 0 ? ' ('+orderCounts.review+')' : ''}`" name="review"></el-tab-pane>
                 </el-tabs>
                 
                 <div class="order-list" v-loading="loadingOrders">
@@ -379,6 +380,7 @@
                         <div class="action-btns">
                           <el-button v-if="order.status === 1" size="small" type="primary" round plain @click="handlePay(order.id)">立即付款</el-button>
                           <el-button v-if="order.status === 3" size="small" type="success" round plain @click="handleConfirmOrder(order.id)">确认收货</el-button>
+                          <el-button v-if="canReviewOrder(order)" size="small" type="primary" round @click="handleCommentOrder(order)">立即评价</el-button>
                           <el-button size="small" round @click="handleViewDetail(order.id)">查看详情</el-button>
                           <el-button 
                             v-if="[1, 4, 5].includes(order.status)" 
@@ -434,10 +436,20 @@
                               class="mini-rate"
                             />
                           </div>
-                          <span class="time">{{ item.createTime }}</span>
+                          <span class="time">{{ item.updateTime || item.createTime }}</span>
+                        </div>
+
+                        <div class="comment-status-row">
+                          <el-tag size="small" :type="getCommentStatusMeta(item.status).type" effect="plain">
+                            {{ getCommentStatusMeta(item.status).text }}
+                          </el-tag>
                         </div>
 
                         <div class="content-text">{{ item.content }}</div>
+
+                        <div v-if="item.rejectReason" class="reject-reason-box">
+                          驳回原因：{{ item.rejectReason }}
+                        </div>
 
                         <div class="review-imgs" v-if="item.images && item.images.length">
                           <el-image 
@@ -481,6 +493,9 @@
                               </div>
                               <template #dropdown>
                                 <el-dropdown-menu>
+                                  <el-dropdown-item v-if="Number(item.status) === 2" command="edit">
+                                    <el-icon><Edit /></el-icon>修改并重新提交
+                                  </el-dropdown-item>
                                   <el-dropdown-item command="delete" style="color: #f56c6c">
                                     <el-icon><Delete /></el-icon>删除评论
                                   </el-dropdown-item>
@@ -718,6 +733,7 @@ import {
 import { ElMessageBox, ElMessage, type FormInstance, type FormRules , type UploadRequestOptions} from 'element-plus'
 import { useUserStore } from '@/stores/useUserStore';
 import { uploadFile } from "@/api/upload";
+import { isHandledRequestError } from '@/utils/request';
 // ★★★ 新增：引入个人资料相关 API ★★★
 import { 
   updateUserInfo, 
@@ -746,11 +762,13 @@ import { confirmOrder } from '@/api/order';
 interface OrderDetailVO {
   id: string | number;
   itemId: string | number;
+  skuId?: string | number;
   num: number;
   name: string;
   price: number;
   image?: string;
   spec: Record<string, string>;
+  commented?: boolean;
 }
 
 interface OrderVO {
@@ -760,6 +778,7 @@ interface OrderVO {
   status: number;
   createTime?: string;
   details?: OrderDetailVO[];
+  commented?: boolean;
 }
 
 // --- 基础配置 ---
@@ -795,6 +814,10 @@ const handleNavSelect = (key: string) => {
 }
 
 const handleCommand = (command: string, item: any) => {
+  if (command === 'edit') {
+    handleResubmitComment(item)
+    return
+  }
   if (command === 'delete') {
     handleDeleteComment(item.id)
   }
@@ -842,7 +865,7 @@ const customUploadRequest = async (options: UploadRequestOptions) => {
     }
   } catch (error: any) {
     console.error("上传失败详情:", error);
-    ElMessage.error(error.message || "头像上传失败，请检查网络");
+    ElMessage.error("头像上传失败，请稍后重试");
   } finally {
     avatarLoading.value = false;
   }
@@ -921,7 +944,9 @@ const handleUpdateProfile = async () => {
         // 更新 Store
         await fetchUserInfo() 
       } catch (error: any) {
-        ElMessage.error(error.message || '修改失败')
+        if (!isHandledRequestError(error)) {
+          ElMessage.error('账户服务开小差了，请稍后再试')
+        }
       } finally {
         updatingProfile.value = false
       }
@@ -949,7 +974,9 @@ const handleChangePassword = async () => {
         passwordForm.newPassword = ''
         passwordForm.confirmPassword = ''
       } catch (error: any) {
-        ElMessage.error(error.message || '密码修改失败')
+        if (!isHandledRequestError(error)) {
+          ElMessage.error('账户服务开小差了，请稍后再试')
+        }
       } finally {
         updatingPassword.value = false
       }
@@ -962,7 +989,7 @@ const rawOrderList = ref<OrderVO[]>([])
 const loadingOrders = ref(false)
 const orderStatus = ref('all')
 const searchOrder = ref('')
-const orderCounts = ref({ pay: 0, ship: 0, receive: 0 })
+const orderCounts = ref({ pay: 0, ship: 0, receive: 0, review: 0 })
 
 // 状态映射字典
 const statusMap: Record<number, { text: string; type: string }> = {
@@ -985,7 +1012,9 @@ const handleConfirmOrder = (orderId: string | number) => {
       ElMessage.success('订单已确认收货')
       fetchOrders() 
     } catch (e) {
-      ElMessage.error('操作失败')
+      if (!isHandledRequestError(e)) {
+        ElMessage.error('订单服务开小差了，请稍后再试')
+      }
     }
   })
 }
@@ -996,6 +1025,41 @@ const formatStatus = (status: number) => {
 
 const handleViewDetail = (orderId: string | number) => {
   router.push(`/order/${orderId}`)
+}
+
+const formatOrderSpecs = (spec?: Record<string, string>) => {
+  if (!spec || !Object.keys(spec).length) {
+    return '默认规格'
+  }
+  return Object.entries(spec).map(([key, value]) => `${key}: ${value}`).join(' / ')
+}
+
+const getPendingCommentDetails = (order: OrderVO) => {
+  return (order.details || []).filter(detail => !!detail.itemId && !detail.commented)
+}
+
+const canReviewOrder = (order: OrderVO) => {
+  return [4, 6].includes(Number(order.status)) && getPendingCommentDetails(order).length > 0
+}
+
+const handleCommentOrder = (order: OrderVO) => {
+  const targetDetail = getPendingCommentDetails(order)[0]
+  if (!targetDetail) {
+    ElMessage.warning('当前订单没有待评价商品')
+    return
+  }
+  router.push({
+    path: '/comment/publish',
+    query: {
+      orderId: String(order.id),
+      orderDetailId: String(targetDetail.id),
+      itemId: String(targetDetail.itemId),
+      skuId: targetDetail.skuId ? String(targetDetail.skuId) : '',
+      productName: targetDetail.name,
+      productImage: targetDetail.image || '',
+      skuSpecs: formatOrderSpecs(targetDetail.spec)
+    }
+  })
 }
 
 const formatPrice = (price?: number | string | null) => {
@@ -1012,11 +1076,22 @@ const fetchOrders = async () => {
   try {
     const res = await getOrderList(user.value.id)
     if (res.data) {
-      rawOrderList.value = res.data
+      rawOrderList.value = res.data.map(order => ({
+        ...order,
+        commented: Boolean(order.commented),
+        details: (order.details || []).map(detail => ({
+          ...detail,
+          itemId: detail.itemId || (detail as any).goodsId || (detail as any).productId || '',
+          skuId: detail.skuId || '',
+          spec: detail.spec || {},
+          commented: Boolean(detail.commented)
+        }))
+      }))
       orderCounts.value = {
         pay: rawOrderList.value.filter(o => o.status === 1).length,
         ship: rawOrderList.value.filter(o => o.status === 2).length,
-        receive: rawOrderList.value.filter(o => o.status === 3).length
+        receive: rawOrderList.value.filter(o => o.status === 3).length,
+        review: rawOrderList.value.filter(canReviewOrder).length
       }
     }
   } catch (error) {
@@ -1029,7 +1104,9 @@ const fetchOrders = async () => {
 // 计算属性：根据条件筛选订单列表
 const filteredOrderList = computed(() => {
   let list = rawOrderList.value
-  if (orderStatus.value !== 'all') {
+  if (orderStatus.value === 'review') {
+    list = list.filter(canReviewOrder)
+  } else if (orderStatus.value !== 'all') {
     const statusFilter: Record<string, number> = { 'pay': 1, 'ship': 2, 'receive': 3 }
     const targetStatus = statusFilter[orderStatus.value]
     if (targetStatus) {
@@ -1074,7 +1151,9 @@ const handleDeleteOrder = (orderId: string | number) => {
       ElMessage.success('删除成功')
       fetchOrders() 
     } catch (e) {
-      ElMessage.error('删除失败')
+      if (!isHandledRequestError(e)) {
+        ElMessage.error('订单服务开小差了，请稍后再试')
+      }
     }
   })
 }
@@ -1118,7 +1197,9 @@ const fetchFavorites = async () => {
     }
   } catch (error) {
     console.error('获取收藏列表失败', error)
-    ElMessage.error('获取收藏列表失败')
+    if (!isHandledRequestError(error)) {
+      ElMessage.error('收藏服务开小差了，请稍后再试')
+    }
   } finally {
     loadingFavorites.value = false
   }
@@ -1135,7 +1216,9 @@ const handleDeleteFavorite = (itemId: number) => {
       ElMessage.success('已取消收藏')
       fetchFavorites()
     } catch (error) {
-      ElMessage.error('操作失败')
+      if (!isHandledRequestError(error)) {
+        ElMessage.error('收藏服务开小差了，请稍后再试')
+      }
     }
   })
 }
@@ -1152,15 +1235,48 @@ const goToProductDetail = (itemId: number) => {
 const commentList = ref<any[]>([]) 
 const loadingComments = ref(false)
 
-const formatSku = (skuStr: string) => {
-  if (!skuStr) return '';
-  try {
-    const cleanStr = skuStr.replace(/[{"}]/g, '').replace(/"/g, '').replace(/:/g, ': ');
-    return cleanStr;
-  } catch (e) {
-    return skuStr;
+const formatSku = (skuValue: string | Record<string, string>) => {
+  if (!skuValue) return '';
+  if (typeof skuValue === 'object') {
+    return Object.entries(skuValue).map(([key, value]) => `${key}: ${value}`).join(' / ');
   }
+  try {
+    const parsed = JSON.parse(skuValue);
+    if (parsed && typeof parsed === 'object') {
+      return Object.entries(parsed).map(([key, value]) => `${key}: ${value}`).join(' / ');
+    }
+  } catch (e) {
+  }
+  return skuValue;
 }
+
+const getCommentStatusMeta = (status?: number) => {
+  const realStatus = Number(status ?? 0)
+  if (realStatus === 1) {
+    return { text: '已通过', type: 'success' as const }
+  }
+  if (realStatus === 2) {
+    return { text: '已驳回', type: 'danger' as const }
+  }
+  return { text: '待审核', type: 'warning' as const }
+}
+
+const handleResubmitComment = (item: CommentVO & { productName?: string; productImage?: string }) => {
+  router.push({
+    path: '/comment/publish',
+    query: {
+      commentId: String(item.id),
+      itemId: String(item.itemId || ''),
+      skuId: item.skuId ? String(item.skuId) : '',
+      orderId: String(item.orderId || ''),
+      orderDetailId: String(item.orderDetailId || ''),
+      productName: item.itemName || item.productName || '',
+      productImage: item.itemImage || item.productImage || '',
+      skuSpecs: formatSku(item.skuSpecs || '')
+    }
+  })
+}
+
 const fetchComments = async () => {
   loadingComments.value = true
   try {
@@ -1175,8 +1291,8 @@ const fetchComments = async () => {
           const productData = itemRes.data || itemRes;
           return {
             ...item,
-            productName: productData.name || productData.title, 
-            productImage: productData.image || productData.pic, 
+            productName: item.itemName || productData.name || productData.title, 
+            productImage: item.itemImage || productData.image || productData.pic, 
             itemId: targetId 
           }
         } catch (e) {
@@ -1191,7 +1307,9 @@ const fetchComments = async () => {
 
   } catch (error) {
     console.error(error)
-    ElMessage.error('获取评价列表失败')
+    if (!isHandledRequestError(error)) {
+      ElMessage.error('评论服务开小差了，请稍后再试')
+    }
   } finally {
     loadingComments.value = false
   }
@@ -1316,7 +1434,9 @@ const submitAddressForm = async () => {
         addressDialogVisible.value = false
         loadAddresses()
       } catch (error: any) {
-        ElMessage.error(error.message || '操作失败')
+        if (!isHandledRequestError(error)) {
+          ElMessage.error('账户服务开小差了，请稍后再试')
+        }
       } finally {
         submitting.value = false
       }
@@ -1331,7 +1451,9 @@ const handleDeleteAddress = (id: number) => {
       ElMessage.success('删除成功')
       loadAddresses()
     } catch (error) {
-      ElMessage.error('删除失败')
+      if (!isHandledRequestError(error)) {
+        ElMessage.error('账户服务开小差了，请稍后再试')
+      }
     }
   })
 }
@@ -1342,7 +1464,9 @@ const handleSetDefault = async (addr: any) => {
     ElMessage.success('设置默认地址成功')
     loadAddresses()
   } catch (error) {
-    ElMessage.error('设置失败')
+    if (!isHandledRequestError(error)) {
+      ElMessage.error('账户服务开小差了，请稍后再试')
+    }
   }
 }
 
@@ -1417,7 +1541,7 @@ $text-sub: #909399;
 .user-center-page {
   background: $bg-color;
   min-height: calc(100vh - 64px);
-  padding: 84px 0 60px;
+  padding: 96px 0 88px;
 }
 
 .container {
@@ -1666,12 +1790,12 @@ $text-sub: #909399;
       }
     }
     .order-footer {
-      padding: 12px 20px; border-top: 1px solid #ebeef5; display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 20px; border-top: 1px solid #ebeef5; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
       .total-section {
         font-size: 13px; color: #606266;
         .total-price { font-size: 18px; color: #f56c6c; font-weight: bold; margin-left: 5px; }
       }
-      .action-btns { display: flex; gap: 10px; }
+      .action-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
     }
   }
 
@@ -1775,6 +1899,16 @@ $text-sub: #909399;
         .time { margin-left: auto; font-size: 12px; color: #c0c4cc; }
       }
       .content-text { font-size: 15px; color: #303133; line-height: 1.6; margin-bottom: 12px; white-space: pre-wrap; }
+      .comment-status-row { margin-bottom: 10px; }
+      .reject-reason-box {
+        margin-bottom: 12px;
+        padding: 10px 12px;
+        border-radius: 6px;
+        background: #fff1f2;
+        color: #b42318;
+        font-size: 13px;
+        line-height: 1.5;
+      }
       .review-imgs {
         display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;
         .review-img-item { width: 100px; height: 100px; border-radius: 8px; cursor: pointer; border: 1px solid #f0f0f0; transition: opacity 0.2s; &:hover { opacity: 0.9; } }

@@ -1,19 +1,13 @@
-import { request } from '@/utils/request'
+import { request, type UserRequestConfig } from '@/utils/request'
 
-// 定义类型接口 (可选)
 export interface CollectItem {
-  itemId: number;
-  name: string;
-  image: string;
-  price: number | string; //这里要能处理Long处理
-  tags:string
-  // ...其他字段
+  itemId: number
+  name: string
+  image: string
+  price: number | string
+  tags: string
 }
 
-// 1. 查询收藏列表
-
-
-// 2. 添加收藏
 export function addCollect(data: CollectItem) {
   return request({
     url: '/collects',
@@ -21,20 +15,18 @@ export function addCollect(data: CollectItem) {
     data
   })
 }
-export function getCollectList(params?: any) {
+
+export function getCollectList(params?: unknown, config?: UserRequestConfig) {
   return request({
+    ...(config || {}),
     url: '/collects',
     method: 'get',
-    params // 通常查询会带分页或筛选参数
-  })
+    params
+  } as UserRequestConfig)
 }
 
-
-// 4. 单个删除 (建议只走 URL)
-export const deleteById = (id: number) => {
-  return request({
+export const deleteById = (id: number) =>
+  request({
     url: `/collects/${id}`,
     method: 'delete'
-    // 通常单删不需要 data: id，因为 ID 已经在 URL 里了
   })
-}

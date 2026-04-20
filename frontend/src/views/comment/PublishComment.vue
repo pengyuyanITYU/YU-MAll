@@ -1,58 +1,47 @@
 <template>
-  <div class="publish-comment-container">
-    <el-card class="box-card" shadow="hover">
+  <div class="publish-comment-page">
+    <el-card class="comment-card" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span class="title">发表评价</span>
-          <span class="sub-title">订单号: {{ form.orderId }}</span>
+          <span class="title">{{ isResubmit ? '修改评价' : '发表评价' }}</span>
+          <span class="sub-title">订单号 {{ form.orderId }}</span>
         </div>
       </template>
 
-      <!-- 1. 商品信息展示区 -->
       <div class="product-info">
-        <el-image :src="productInfo.image" fit="cover" class="product-img" />
-        <div class="product-detail">
+        <el-image :src="productInfo.image" fit="cover" class="product-image" />
+        <div class="product-main">
           <h3 class="product-name">{{ productInfo.name }}</h3>
-          <p class="product-sku">{{ productInfo.skuSpecs }}</p>
+          <p v-if="productInfo.skuSpecs" class="product-spec">{{ productInfo.skuSpecs }}</p>
+          <p v-if="isResubmit && rejectReason" class="reject-reason">驳回原因：{{ rejectReason }}</p>
         </div>
       </div>
 
-      <!-- 2. 评价表单区 -->
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="rules"
-        label-position="top"
-        size="large"
-        class="comment-form"
-      >
-        <!-- 评分 -->
+      <el-form ref="formRef" :model="form" :rules="rules" label-position="top" size="large">
         <el-form-item label="商品评分" prop="rating">
-          <div class="rating-wrapper">
+          <div class="rating-row">
             <el-rate
               v-model="form.rating"
               show-text
               :texts="['非常差', '差', '一般', '好', '非常好']"
               :colors="['#99A9BF', '#F7BA2A', '#FF9900']"
             />
-            <span class="rating-tip" v-if="form.rating > 0">{{ ratingText }}</span>
+            <span v-if="form.rating > 0" class="rating-text">{{ ratingText }}</span>
           </div>
         </el-form-item>
 
-        <!-- 评价内容 -->
         <el-form-item label="评价内容" prop="content">
           <el-input
             v-model="form.content"
             type="textarea"
             :rows="6"
-            placeholder="商品满足你的期待吗？说说它的优点和不足的地方吧~"
+            placeholder="写下你对这件商品的真实体验"
             maxlength="500"
             show-word-limit
           />
         </el-form-item>
 
-        <!-- 图片上传 (修改点：增加 http-request，移除 auto-upload) -->
-        <el-form-item label="晒图 (最多9张)" prop="images">
+        <el-form-item label="晒单图片（最多 9 张）">
           <el-upload
             v-model:file-list="fileList"
             action="#"
@@ -65,28 +54,25 @@
           >
             <el-icon><Plus /></el-icon>
           </el-upload>
-          <!-- 图片预览弹窗 -->
           <el-dialog v-model="dialogVisible">
-            <img w-full :src="dialogImageUrl" alt="Preview Image" style="width: 100%" />
+            <img :src="dialogImageUrl" alt="preview" style="width: 100%">
           </el-dialog>
         </el-form-item>
 
-        <!-- 匿名选项 -->
         <el-form-item>
-          <div class="options-row">
+          <div class="anonymous-row">
             <el-checkbox v-model="form.isAnonymous" border>
-              <el-icon class="el-icon--left"><Hide /></el-icon>
+              <el-icon class="checkbox-icon"><Hide /></el-icon>
               匿名评价
             </el-checkbox>
-            <span class="tip-text">勾选后，您的头像和昵称将对其他用户隐藏</span>
+            <span class="anonymous-tip">勾选后会隐藏昵称</span>
           </div>
         </el-form-item>
 
-        <!-- 提交按钮 -->
-        <div class="form-footer">
+        <div class="form-actions">
           <el-button @click="goBack">取消</el-button>
           <el-button type="primary" :loading="loading" @click="submitForm(formRef)">
-            发布评价
+            {{ isResubmit ? '重新提交审核' : '提交评价' }}
           </el-button>
         </div>
       </el-form>
@@ -95,25 +81,25 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, onMounted } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, type FormInstance, type UploadProps, type UploadUserFile, type UploadRequestOptions } from 'element-plus'
-import { Plus, Hide } from '@element-plus/icons-vue'
-import { addComment, type CommentDTO } from '@/api/comment'
-import { uploadFile } from "@/api/upload"; // 引入上传接口
+import { ElMessage, type FormInstance, type UploadProps, type UploadRequestOptions, type UploadUserFile } from 'element-plus'
+import { Hide, Plus } from '@element-plus/icons-vue'
+import { addComment, getUserCommentDetail, updateComment, type CommentDTO } from '@/api/comment'
+import { uploadFile } from '@/api/upload'
 import { useUserStore } from '@/stores/useUserStore'
+import { isHandledRequestError } from '@/utils/request'
 
 const route = useRoute()
 const router = useRouter()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
-const imageUploading = ref(false) // 图片上传状态
-
-// 图片上传相关
+const imageUploading = ref(false)
 const fileList = ref<UploadUserFile[]>([])
 const dialogImageUrl = ref('')
 const dialogVisible = ref(false)
-const {userInfo} = useUserStore()
+const rejectReason = ref('')
+const { userInfo } = useUserStore()
 
 const productInfo = reactive({
   name: '加载中...',
@@ -123,7 +109,7 @@ const productInfo = reactive({
 
 const form = reactive<CommentDTO>({
   itemId: '',
-  skuId: '',
+  skuId: undefined,
   orderId: '',
   orderDetailId: '',
   rating: 0,
@@ -136,229 +122,303 @@ const form = reactive<CommentDTO>({
 
 const rules = {
   rating: [
-    { required: true, message: '请给商品打个分吧', trigger: 'change' },
-    { type: 'number', min: 1, message: '评分最低为1分', trigger: 'change' }
+    { required: true, message: '请给商品打分', trigger: 'change' },
+    { type: 'number', min: 1, message: '评分最低为 1 分', trigger: 'change' }
   ],
   content: [
     { required: true, message: '请填写评价内容', trigger: 'blur' },
-    { min: 5, message: '多写几个字吧,至少5个字哦', trigger: 'blur' }
+    { min: 5, message: '至少输入 5 个字', trigger: 'blur' }
   ]
 }
 
+const commentId = computed(() => (route.query.commentId as string) || '')
+const isResubmit = computed(() => Boolean(commentId.value))
+
 const ratingText = computed(() => {
-  const texts = ['', '失望', '一般', '不错', '满意', '惊喜']
+  const texts = ['', '失望', '一般', '还行', '满意', '惊喜']
   return texts[form.rating] || ''
 })
 
-onMounted(() => {
-  const { itemId, skuId, orderId, orderDetailId, productName, productImage, skuSpecs } = route.query
-  form.itemId = itemId as string
-  if (skuId) form.skuId = skuId as string
-  if (orderId) form.orderId = orderId as string
-  if (orderDetailId) form.orderDetailId = orderDetailId as string
-
-  productInfo.name = (productName as string) || '示例商品名称'
-  productInfo.image = (productImage as string) || 'https://via.placeholder.com/150'
-  productInfo.skuSpecs = (skuSpecs as string) || '默认规格'
-  form.userAvatar = userInfo.avatar
-  form.userNickname = userInfo.nickName
-})
-
-// --- 核心修改：自定义上传逻辑 ---
 const customUploadRequest = async (options: UploadRequestOptions) => {
   const { file } = options
   imageUploading.value = true
   try {
     const res: any = await uploadFile(file as any)
     const uploadedUrl = res?.url || res?.data?.url
-
-    if (uploadedUrl) {
-      // 将上传成功的地址存入表单
-      form.images?.push(uploadedUrl)
-      // 必须更新 fileList 中对应项的 url，否则预览会失效（显示为 blob 地址）
-      const currentFile = fileList.value.find(f => f.uid === file.uid)
-      if (currentFile) {
-        currentFile.url = uploadedUrl
-      }
-      ElMessage.success("图片上传成功")
+    if (!uploadedUrl) {
+      throw new Error('上传未返回图片地址')
     }
-  } catch (error: any) {
-    ElMessage.error("图片上传失败")
-    // 上传失败时，从文件列表中移除该项
-    const index = fileList.value.findIndex(f => f.uid === file.uid)
-    if (index !== -1) fileList.value.splice(index, 1)
+    form.images = [...(form.images || []), uploadedUrl]
+    const currentFile = fileList.value.find(item => item.uid === file.uid)
+    if (currentFile) {
+      currentFile.url = uploadedUrl
+    }
+    ElMessage.success('图片上传成功')
+  } catch (error) {
+    console.error('上传评价图片失败', error)
+    ElMessage.error('图片上传失败，请稍后重试')
+    fileList.value = fileList.value.filter(item => item.uid !== file.uid)
   } finally {
     imageUploading.value = false
   }
 }
 
-// 图片预览
 const handlePictureCardPreview: UploadProps['onPreview'] = (uploadFile) => {
-  dialogImageUrl.value = uploadFile.url!
+  dialogImageUrl.value = uploadFile.url || ''
   dialogVisible.value = true
 }
 
-// 图片移除 (修改点：同步移除 form.images 中的数据)
 const handleRemove: UploadProps['onRemove'] = (uploadFile) => {
   const removedUrl = uploadFile.url
-  if (form.images) {
-    form.images = form.images.filter(url => url !== removedUrl)
+  if (!removedUrl) {
+    return
   }
+  form.images = (form.images || []).filter(url => url !== removedUrl)
 }
 
-// 上传前校验
 const beforeUpload: UploadProps['beforeUpload'] = (rawFile) => {
-  const isImg = rawFile.type === 'image/jpeg' || rawFile.type === 'image/png'
+  const isImage = rawFile.type === 'image/jpeg' || rawFile.type === 'image/png'
   const isLt5M = rawFile.size / 1024 / 1024 < 5
-
-  if (!isImg) {
-    ElMessage.error('图片必须是 JPG 或 PNG 格式!')
+  if (!isImage) {
+    ElMessage.error('图片必须是 JPG 或 PNG 格式')
     return false
   }
   if (!isLt5M) {
-    ElMessage.error('图片大小不能超过 5MB!')
+    ElMessage.error('图片大小不能超过 5MB')
     return false
   }
   return true
 }
 
-// 提交表单
-const submitForm = async (formEl: FormInstance | undefined) => {
-  if (!formEl) return
-  if (imageUploading.value) {
-    return ElMessage.warning("图片正在上传中，请稍候")
+function buildPayload(): CommentDTO {
+  const payload: CommentDTO = {
+    itemId: form.itemId,
+    orderId: form.orderId,
+    orderDetailId: form.orderDetailId,
+    rating: form.rating,
+    content: form.content,
+    images: form.images || [],
+    isAnonymous: form.isAnonymous,
+    userNickname: form.userNickname,
+    userAvatar: form.userAvatar
   }
-
-  await formEl.validate(async (valid) => {
-    if (valid) {
-      loading.value = true
-      try {
-        // 由于已经在 customUploadRequest 中维护了 form.images，
-        // 这里直接提交 form 即可，无需再次处理 fileList
-        await addComment(form)
-        ElMessage.success('评价发布成功！')
-        router.push(`/order/${form.orderId}`)
-      } catch (error) {
-        console.error(error)
-      } finally {
-        loading.value = false
-      }
-    }
-  })
+  if (form.skuId && Number(form.skuId) > 0) {
+    payload.skuId = form.skuId
+  }
+  return payload
 }
 
-const goBack = () => {
+function fillProductInfoFromQuery() {
+  const { itemId, skuId, orderId, orderDetailId, productName, productImage, skuSpecs } = route.query
+  form.itemId = (itemId as string) || ''
+  form.orderId = (orderId as string) || ''
+  form.orderDetailId = (orderDetailId as string) || ''
+  if (skuId && Number(skuId) > 0) {
+    form.skuId = skuId as string
+  }
+  productInfo.name = (productName as string) || '商品信息缺失'
+  productInfo.image = (productImage as string) || '/placeholder-image.svg'
+  productInfo.skuSpecs = (skuSpecs as string) || ''
+}
+
+function syncFileList(images?: string[]) {
+  fileList.value = (images || []).map((url, index) => ({
+    name: `image-${index + 1}`,
+    url
+  }))
+}
+
+async function loadRejectedComment() {
+  if (!isResubmit.value) {
+    return
+  }
+  try {
+    const res: any = await getUserCommentDetail(commentId.value)
+    const detail = res?.data || res
+    if (!detail) {
+      throw new Error('评论详情不存在')
+    }
+    if (Number(detail.status) !== 2) {
+      ElMessage.error('只有已驳回评论可以重新提交')
+      router.replace({ path: '/user', query: { tab: 'comments' } })
+      return
+    }
+    form.rating = Number(detail.rating || 0)
+    form.content = detail.content || ''
+    form.images = Array.isArray(detail.images) ? [...detail.images] : []
+    form.isAnonymous = Boolean(detail.isAnonymous)
+    rejectReason.value = detail.rejectReason || ''
+    syncFileList(form.images)
+  } catch (error) {
+    console.error('加载评论详情失败', error)
+    if (!isHandledRequestError(error)) {
+      ElMessage.error('评论服务开小差了，请稍后再试')
+    }
+    router.replace({ path: '/user', query: { tab: 'comments' } })
+  }
+}
+
+async function submitForm(formEl: FormInstance | undefined) {
+  if (!formEl) {
+    return
+  }
+  if (imageUploading.value) {
+    ElMessage.warning('图片仍在上传，请稍后')
+    return
+  }
+  const valid = await formEl.validate().catch(() => false)
+  if (!valid) {
+    return
+  }
+  loading.value = true
+  try {
+    if (isResubmit.value) {
+      await updateComment(commentId.value, buildPayload())
+    } else {
+      await addComment(buildPayload())
+    }
+    ElMessage.success('已提交审核')
+    if (isResubmit.value) {
+      router.push({ path: '/user', query: { tab: 'comments' } })
+      return
+    }
+    router.push(`/order/${form.orderId}`)
+  } catch (error) {
+    console.error('提交评论失败', error)
+    if (!isHandledRequestError(error)) {
+      ElMessage.error('评论服务开小差了，请稍后再试')
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+function goBack() {
+  if (isResubmit.value) {
+    router.push({ path: '/user', query: { tab: 'comments' } })
+    return
+  }
   router.back()
 }
+
+onMounted(async () => {
+  fillProductInfoFromQuery()
+  form.userAvatar = userInfo.avatar
+  form.userNickname = userInfo.nickName
+  await loadRejectedComment()
+})
 </script>
 
 <style scoped lang="scss">
-/* 样式保持不变 */
-.publish-comment-container {
-  max-width: 800px;
-  margin: 40px auto;
-  padding: 0 20px;
+.publish-comment-page {
+  min-height: calc(100vh - 64px);
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 96px 16px 88px;
+}
 
-  .box-card {
-    border-radius: 12px;
-  }
+.comment-card {
+  border-radius: 18px;
+  border: none;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+}
 
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
 
-    .title {
-      font-size: 18px;
-      font-weight: bold;
-      color: #303133;
-    }
-    .sub-title {
-      font-size: 14px;
-      color: #909399;
-    }
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.sub-title {
+  color: #6b7280;
+}
+
+.product-info {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 18px;
+  border-radius: 16px;
+  background: #f9fafb;
+  margin-bottom: 24px;
+}
+
+.product-image {
+  width: 88px;
+  height: 88px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.product-name {
+  margin: 0;
+  font-size: 18px;
+  color: #111827;
+}
+
+.product-spec {
+  margin: 10px 0 0;
+  color: #6b7280;
+}
+
+.reject-reason {
+  margin: 12px 0 0;
+  color: #dc2626;
+  font-size: 13px;
+}
+
+.rating-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.rating-text {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.anonymous-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.checkbox-icon {
+  margin-right: 6px;
+}
+
+.anonymous-tip {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .publish-comment-page {
+    padding: 84px 12px 72px;
   }
 
   .product-info {
-    display: flex;
-    align-items: center;
-    padding: 20px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    margin-bottom: 30px;
-
-    .product-img {
-      width: 80px;
-      height: 80px;
-      border-radius: 6px;
-      border: 1px solid #ebeef5;
-      margin-right: 16px;
-    }
-
-    .product-detail {
-      .product-name {
-        font-size: 16px;
-        font-weight: 500;
-        color: #303133;
-        margin: 0 0 8px 0;
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-      }
-      .product-sku {
-        font-size: 13px;
-        color: #909399;
-        margin: 0;
-      }
-    }
+    flex-direction: column;
+    align-items: flex-start;
   }
 
-  .comment-form {
-    .rating-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-
-      .rating-tip {
-        font-size: 14px;
-        color: #ff9900;
-        font-weight: bold;
-      }
-    }
-
-    .options-row {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-
-      .tip-text {
-        font-size: 12px;
-        color: #909399;
-      }
-    }
-
-    .form-footer {
-      margin-top: 40px;
-      display: flex;
-      justify-content: flex-end;
-      gap: 15px;
-    }
-  }
-}
-
-@media (max-width: 768px) {
-  .publish-comment-container {
-    margin: 10px auto;
-    padding: 0;
-
-    .product-info {
-      padding: 10px;
-      .product-img {
-        width: 60px;
-        height: 60px;
-      }
-    }
+  .form-actions {
+    justify-content: stretch;
   }
 }
 </style>

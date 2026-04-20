@@ -55,3 +55,8 @@ export const useUserStore = defineStore('userInfo', () => {
 ```
 
 持久化：`pinia-plugin-persistedstate`，用户信息存 sessionStorage。
+
+## GOTCHAS
+
+- Java Long 转 JS 会精度丢失，后端已转字符串，前端作为 string 处理 ID
+- 收藏删除 API 用 `collectId`（记录ID）而非 `itemId`

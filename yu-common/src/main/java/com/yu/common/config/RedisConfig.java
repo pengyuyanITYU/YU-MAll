@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.yu.common.utils.RedisExpireUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CachingConfigurer;
@@ -28,7 +28,7 @@ import java.util.Map;
 @Configuration
 @EnableCaching
 @Slf4j
-@ConditionalOnClass(RedisConnectionFactory.class)
+@ConditionalOnBean(RedisConnectionFactory.class)
 public class RedisConfig implements CachingConfigurer {
 
     @Bean

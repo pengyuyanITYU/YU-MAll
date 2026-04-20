@@ -9,10 +9,12 @@ spring:
       server-addr: 192.168.100.128:8848
       config:
         server-addr: 192.168.100.128:8848
+        namespace: public
         import-check:
           enabled: false
       discovery:
         server-addr: 192.168.100.128:8848
+        namespace: public
   ai:
     openai:
       base-url: https://dashscope.aliyuncs.com/compatible-mode

@@ -1,0 +1,33 @@
+<svg width="420" height="240" viewBox="0 0 420 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="heroTechMain" x1="140" y1="28" x2="314" y2="190" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FDFEFF"/>
+      <stop offset="1" stop-color="#DFE9FF"/>
+    </linearGradient>
+    <linearGradient id="heroTechChip" x1="158" y1="86" x2="247" y2="152" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5CA9FF"/>
+      <stop offset="1" stop-color="#2F6AF7"/>
+    </linearGradient>
+    <radialGradient id="heroTechOrb" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(290 69) rotate(90) scale(34)">
+      <stop stop-color="#FEFEFF"/>
+      <stop offset="0.48" stop-color="#7B92D8"/>
+      <stop offset="1" stop-color="#2A3774"/>
+    </radialGradient>
+  </defs>
+  <g opacity="0.28">
+    <circle cx="246" cy="108" r="82" stroke="#F2F7FF" stroke-width="3"/>
+    <circle cx="246" cy="108" r="56" stroke="#D8E7FF" stroke-width="2"/>
+  </g>
+  <g transform="translate(154 38) rotate(13 88 76)">
+    <rect x="0" y="12" width="176" height="132" rx="40" fill="url(#heroTechMain)" stroke="#D4E3FF" stroke-width="2"/>
+    <rect x="46" y="84" width="90" height="28" rx="14" fill="#4F5F95"/>
+  </g>
+  <g transform="translate(164 92) rotate(-10 38 28)">
+    <rect x="0" y="0" width="76" height="56" rx="18" fill="url(#heroTechChip)"/>
+    <path d="M30 18H46V24H56V36H46V42H30V36H20V24H30V18Z" fill="#FFFFFF"/>
+  </g>
+  <circle cx="290" cy="69" r="28" fill="url(#heroTechOrb)"/>
+  <circle cx="290" cy="69" r="25.5" stroke="#E1EAFF" stroke-width="3"/>
+  <circle cx="330" cy="112" r="14" fill="#8FD8FF" fill-opacity="0.52"/>
+  <circle cx="202" cy="50" r="12" fill="#C5E7FF" fill-opacity="0.72"/>
+</svg>

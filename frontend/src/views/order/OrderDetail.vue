@@ -1,188 +1,134 @@
-<template>
+﻿<template>
   <div class="order-detail-page" v-loading="loading">
-    <div class="container">
-      
-      <!-- 1. 顶部 Header -->
-      <div class="page-header">
+    <div class="order-detail-container">
+      <div class="top-bar">
         <el-page-header @back="goBack">
           <template #content>
-            <span class="header-title">订单详情</span>
+            <div class="page-title-wrap">
+              <span class="page-title">订单详情</span>
+              <el-tag :type="statusMeta.type" effect="dark">{{ statusMeta.text }}</el-tag>
+            </div>
           </template>
           <template #extra>
-            <div class="header-info">
-              <span class="order-id">订单号：{{ order.id }}</span>
-              <el-tag :type="statusMeta.type" effect="dark" size="large">
-                {{ statusMeta.text }}
-              </el-tag>
-            </div>
+            <span class="order-no">订单号：{{ order.id || '-' }}</span>
           </template>
         </el-page-header>
       </div>
 
-      <!-- 2. 状态进度条与操作区 -->
-      <el-card v-if="order.status !== 5" class="section-card" shadow="never">
-        <el-steps :active="activeStep" align-center finish-status="success" class="custom-steps">
-          <el-step title="提交订单" :description="formatTime(order.createTime)" />
-          <el-step title="完成付款" :description="formatTime(order.payTime)" />
-          <el-step title="商家发货" :description="formatTime(order.consignTime)" />
-          <el-step title="交易完成" :description="formatTime(order.endTime)" />
-        </el-steps>
-        
-        <div class="action-bar">
-          <el-button v-if="order.status === 1" type="primary" size="large" @click="handlePay">立即付款</el-button>
-          <el-button v-if="order.status === 3" type="success" size="large" @click="handleReceive">确认收货</el-button>
-          <el-button v-if="order.status === 1" @click="handleCancel">取消订单</el-button>
-          <el-button v-if="order.status === 4 || order.status === 6" type="danger" plain @click="handleDelete">删除订单</el-button>
-        </div>
-      </el-card>
-
-      <!-- 订单已取消状态 -->
-      <el-card v-else class="section-card cancel-card" shadow="never">
-        <div class="cancel-content">
-          <el-icon :size="50" color="#909399"><CircleCloseFilled /></el-icon>
-          <div class="cancel-text">
-            <h3>订单已取消</h3>
-            <p>取消时间：{{ order.closeTime}}</p>
-            <p class="reason">如果您想重新购买，请重新下单</p>
-          </div>
-        </div>
-        <div class="action-bar" style="margin-top: 20px; text-align: center;">
-          <el-button type="danger" plain @click="handleDelete">删除订单</el-button>
-        </div>
-      </el-card>
-
-      <el-row :gutter="20" class="info-row">
-        <!-- 左侧：主要信息 -->
-        <el-col :xs="24" :sm="16">
-          
-          <!-- 收货信息 -->
+      <div class="detail-grid">
+        <div class="main-column">
           <el-card shadow="never" class="section-card">
-            <template #header>
-              <div class="card-header"><el-icon><Location /></el-icon> <span>收货信息</span></div>
-            </template>
+            <div class="section-head">
+              <h2>收货信息</h2>
+            </div>
             <div class="address-box">
-              <div class="addr-user">{{ order.receiverContact }} <span class="addr-phone">{{ order.receiverMobile }}</span></div>
-              <div class="addr-detail">{{ order.receiverAddress }}</div>
+              <div class="receiver">{{ order.receiverContact || '-' }} {{ order.receiverMobile || '' }}</div>
+              <div class="address">{{ order.receiverAddress || '暂无收货地址' }}</div>
             </div>
           </el-card>
 
-          <!-- 商品列表 (v-for 卡片式布局) -->
-          <el-card shadow="never" class="section-card goods-card">
-            <template #header>
-              <div class="card-header"><el-icon><Goods /></el-icon> <span>商品清单</span></div>
-            </template>
-            
+          <el-card shadow="never" class="section-card">
+            <div class="section-head">
+              <h2>商品清单</h2>
+            </div>
             <div class="goods-list">
-              <div 
-                v-for="(item, index) in order.details" 
-                :key="item.id || index" 
-                class="goods-item"
-              >
-                <!-- 商品图片 -->
-                <el-image :src="item.image" class="goods-img" fit="cover">
-                   <template #error><div class="img-slot"><el-icon><Picture /></el-icon></div></template>
+              <article v-for="item in order.details" :key="item.id" class="goods-item">
+                <el-image class="goods-image" :src="item.image" fit="cover">
+                  <template #error>
+                    <div class="goods-image-fallback">
+                      <el-icon><Picture /></el-icon>
+                    </div>
+                  </template>
                 </el-image>
 
-                <!-- 商品主体信息 -->
                 <div class="goods-main">
                   <div class="goods-name">{{ item.name }}</div>
-                  <div class="goods-props" v-if="item.spec">
-                    <span v-for="(val, key) in item.spec" :key="key" class="prop-tag">
-                      {{ key }}: {{ val }}
-                    </span>
+                  <div v-if="item.spec && Object.keys(item.spec).length" class="goods-spec">
+                    {{ formatSpecs(item.spec) }}
                   </div>
+                  <div class="goods-sku">SKU：{{ item.skuId || '默认规格' }}</div>
                 </div>
 
-                <!-- 价格与数量 -->
-                <div class="goods-price-col">
-                  <div class="price">¥{{ (item.price / 100).toFixed(2) }}</div>
-                  <div class="num">x{{ item.num }}</div>
+                <div class="goods-side">
+                  <div>单价 ¥{{ formatPrice(item.price) }}</div>
+                  <div>数量 x{{ item.num }}</div>
+                  <strong>小计 ¥{{ formatPrice(Number(item.price) * Number(item.num)) }}</strong>
+                  <el-button
+                    v-if="canCommentItem(item)"
+                    type="primary"
+                    size="small"
+                    @click="handleComment(item)"
+                  >
+                    立即评价
+                  </el-button>
+                  <el-tag v-else-if="isItemCommented(item)" type="info">已评价</el-tag>
                 </div>
-
-                <!-- 右侧操作区 (小计 + 按钮) -->
-                <div class="goods-action-col">
-                  <div class="subtotal">
-                    合计: <span>¥{{ (item.price * item.num / 100).toFixed(2) }}</span>
-                  </div>
-                  
-                  <!-- 评价逻辑修改区域 -->
-                  <div class="btn-wrapper">
-                    <!-- 
-                      1. 立即评价
-                      条件：订单状态为已完成(4) 且 未评价(!order.commented)
-                    -->
-                    <el-button 
-                      v-if="order.status === 4 && !order.commented" 
-                      type="primary" 
-                      size="small" 
-                      round
-                      @click="handleComment(item)"
-                    >
-                      立即评价
-                    </el-button>
-
-                    <!-- 
-                      2. 已评价 (仅显示标签，不显示按钮)
-                      条件：订单状态为已评价(6) 或 order.commented 为 true
-                    -->
-                    <el-tag 
-                      v-else-if="order.status === 6 || order.commented" 
-                      type="info" 
-                      effect="plain"
-                      round
-                    >
-                      已评价
-                    </el-tag>
-                  </div>
-                </div>
-              </div>
+              </article>
             </div>
           </el-card>
-        </el-col>
+        </div>
 
-        <!-- 右侧：订单金额信息 -->
-        <el-col :xs="24" :sm="8">
+        <div class="side-column">
           <el-card shadow="never" class="section-card">
-            <template #header>
-              <div class="card-header"><el-icon><List /></el-icon> <span>订单信息</span></div>
-            </template>
-            <div class="order-meta-list">
-              <div class="meta-item">
-                <span class="label">订单编号</span><span class="val">{{ route.params.id }}</span>
+            <div class="section-head">
+              <h2>订单信息</h2>
+            </div>
+            <div class="meta-list">
+              <div class="meta-row">
+                <span>下单时间</span>
+                <span>{{ formatTime(order.createTime) }}</span>
               </div>
-              <div class="meta-item">
-                <span class="label">下单时间</span><span class="val">{{ order.createTime }}</span>
+              <div class="meta-row">
+                <span>支付方式</span>
+                <span>{{ getPaymentMethod(order.paymentType) }}</span>
               </div>
-              <div class="meta-item" v-if="order.status === 5">
-                <span class="label">取消时间</span><span class="val">{{ order.closeTime }}</span>
+              <div v-if="order.payTime" class="meta-row">
+                <span>支付时间</span>
+                <span>{{ formatTime(order.payTime) }}</span>
               </div>
-              <div class="meta-item">
-                <span class="label">支付方式</span><span class="val">{{ getPaymentMethod(order.paymentType) }}</span>
+              <div v-if="order.consignTime" class="meta-row">
+                <span>发货时间</span>
+                <span>{{ formatTime(order.consignTime) }}</span>
+              </div>
+              <div v-if="order.endTime" class="meta-row">
+                <span>完成时间</span>
+                <span>{{ formatTime(order.endTime) }}</span>
+              </div>
+              <div v-if="order.closeTime" class="meta-row">
+                <span>关闭时间</span>
+                <span>{{ formatTime(order.closeTime) }}</span>
               </div>
             </div>
-            <el-divider />
-            <div class="fee-section">
-              <div class="fee-row">
-                <span>商品总额</span><span>¥{{ (order.totalFee / 100).toFixed(2) }}</span>
+
+            <div class="price-box">
+              <div class="meta-row total">
+                <span>实付金额</span>
+                <strong>¥{{ formatPrice(order.totalFee) }}</strong>
               </div>
-              <div class="fee-row total">
-                <span>实付款</span>
-                <span class="total-price"><small>¥</small>{{ (order.totalFee / 100).toFixed(2) }}</span>
-              </div>
+            </div>
+
+            <div class="action-list">
+              <el-button v-if="order.status === 1" type="primary" @click="handlePay">立即付款</el-button>
+              <el-button v-if="order.status === 3" type="success" @click="handleReceive">确认收货</el-button>
+              <el-button v-if="order.status === 1" @click="handleCancel">取消订单</el-button>
+              <el-button v-if="[4, 5, 6].includes(order.status)" type="danger" plain @click="handleDelete">
+                删除订单
+              </el-button>
             </div>
           </el-card>
-        </el-col>
-      </el-row>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Location, Goods, List, Picture, CircleCloseFilled } from '@element-plus/icons-vue'
+import { CircleCloseFilled, Picture } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getOrderDetail, deleteOrder, cancelOrder, type OrderVO, confirmOrder } from '@/api/order'
+import { cancelOrder, confirmOrder, deleteOrder, getOrderDetail, type OrderDetailVO, type OrderVO } from '@/api/order'
+import { isHandledRequestError } from '@/utils/request'
 
 const route = useRoute()
 const router = useRouter()
@@ -206,223 +152,385 @@ const order = ref<OrderVO>({
   commented: false
 })
 
-// 状态映射
-const statusMap: Record<number, { text: string; type: string; step: number }> = {
-  1: { text: '待付款', type: 'danger', step: 0 },
-  2: { text: '待发货', type: 'warning', step: 1 },
-  3: { text: '待收货', type: 'primary', step: 2 },
-  4: { text: '已完成', type: 'success', step: 3 },
-  5: { text: '已取消', type: 'info', step: 0 },
-  6: { text: '已评价', type: 'success', step: 3 }
+const statusMap: Record<number, { text: string; type: 'success' | 'warning' | 'info' | 'danger' | 'primary' }> = {
+  1: { text: '待付款', type: 'danger' },
+  2: { text: '待发货', type: 'warning' },
+  3: { text: '待收货', type: 'primary' },
+  4: { text: '已完成', type: 'success' },
+  5: { text: '已取消', type: 'info' },
+  6: { text: '已评价', type: 'success' }
 }
 
-const statusMeta = computed(() => {
-  return statusMap[order.value.status] || { text: '未知状态', type: 'info', step: 0 }
-})
+const statusMeta = computed(() => statusMap[Number(order.value.status)] || { text: '未知状态', type: 'info' as const })
 
-const activeStep = computed(() => statusMeta.value.step)
-
-// ------------------------------------------------------
-// 跳转评价逻辑
-// ------------------------------------------------------
-const handleComment = (item: any) => {
-  let skuSpecsStr = ''
-  if (item.spec) {
-    skuSpecsStr = Object.values(item.spec).join(', ')
+const formatPrice = (price?: number | string | null) => {
+  if (price === undefined || price === null || price === '') {
+    return '0.00'
   }
+  return (Number(price) / 100).toFixed(2)
+}
 
-  // 安全检查
+const formatTime = (value?: string) => {
+  return value ? value.replace('T', ' ') : '-'
+}
+
+const formatSpecs = (specs?: Record<string, string>) => {
+  if (!specs || !Object.keys(specs).length) {
+    return '默认规格'
+  }
+  return Object.entries(specs).map(([key, value]) => `${key}: ${value}`).join(' / ')
+}
+
+const getPaymentMethod = (type: number) => ({ 1: '支付宝', 2: '微信支付', 3: '余额支付' }[type] || '在线支付')
+
+const isItemCommented = (item: OrderDetailVO) => Boolean(item.commented)
+
+const canCommentItem = (item: OrderDetailVO) => {
+  return [4, 6].includes(Number(order.value.status)) && !isItemCommented(item) && Boolean(item.itemId)
+}
+
+const buildCommentQuery = (item: OrderDetailVO) => {
+  const query: Record<string, string | number> = {
+    orderId: String(order.value.id),
+    orderDetailId: item.id,
+    itemId: item.itemId,
+    productName: item.name,
+    productImage: item.image || '',
+    skuSpecs: formatSpecs(item.spec)
+  }
+  if (item.skuId && Number(item.skuId) > 0) {
+    query.skuId = item.skuId
+  }
+  return query
+}
+
+const handleComment = (item: OrderDetailVO) => {
   if (!item.itemId) {
-    console.error('商品ID缺失', item)
-    ElMessage.warning('商品数据异常，请刷新重试')
+    ElMessage.warning('订单明细缺少商品信息，无法评价')
     return
   }
-  
-  router.push({
-    path: '/comment/publish',
-    query: {
-      orderId: order.value.id,
-      orderDetailId: item.id,
-      itemId: item.itemId, 
-      skuId: item.skuId || 0,
-      productName: item.name,
-      productImage: item.image,
-      skuSpecs: skuSpecsStr
-    }
-  })
+  router.push({ path: '/comment/publish', query: buildCommentQuery(item) })
 }
 
-// ------------------------------------------------------
-// 获取详情 + 数据清洗
-// ------------------------------------------------------
-const fetchDetail = async () => {
-  const id:any = route.params.id  
-  if (!id) return
+const fetchDetail = async (id?: string) => {
+  const currentId = id || (route.params.id as string)
+  if (!currentId) {
+    return
+  }
   loading.value = true
   try {
-    const res: any = await getOrderDetail(id)
-    const data = res.data || res
-    
-    if (data) {
-      // 核心处理：确保 details 里的每一项都有 itemId
-      if (data.details && data.details.length > 0) {
-        data.details.forEach((item: any, index: number) => {
-          if (!item.itemId) {
-             item.itemId = item.goodsId || item.productId;
-             if (!item.itemId) {
-               item.itemId = 10000 + index; 
-             }
-          }
-        });
-      }
-      order.value = data
+    const res: any = await getOrderDetail(currentId)
+    const data = res?.data || res
+    const details = Array.isArray(data?.details)
+      ? data.details.map((item: any) => ({
+          ...item,
+          itemId: item.itemId || item.goodsId || item.productId || '',
+          skuId: item.skuId || 0,
+          commented: Boolean(item.commented)
+        }))
+      : []
+
+    order.value = {
+      ...order.value,
+      ...data,
+      details,
+      commented: typeof data?.commented === 'boolean'
+        ? data.commented
+        : details.length > 0 && details.every((item: OrderDetailVO) => Boolean(item.commented))
     }
   } catch (error) {
-    ElMessage.error('获取订单详情失败')
+    console.error('获取订单详情失败', error)
+    if (!isHandledRequestError(error)) {
+      ElMessage.error('订单服务开小差了，请稍后再试')
+    }
   } finally {
     loading.value = false
   }
 }
 
-// ------------------------------------------------------
-// 其他业务逻辑
-// ------------------------------------------------------
 const handleCancel = () => {
- const currentId = (route.params.id as string) 
-  if (!currentId) return
-  ElMessageBox.confirm('确定要取消该订单吗？', '取消确认', {
-      confirmButtonText: '确定取消', cancelButtonText: '暂不取消', type: 'warning'
-  }).then(async () => {
-    try {
-      loading.value = true
-      await cancelOrder(currentId)
-      ElMessage.success('订单已取消')
-      await fetchDetail()
-    } catch (e) { ElMessage.error('操作失败') }
-    finally { loading.value = false }
-  }).catch(() => {})
+  const currentId = route.params.id as string
+  if (!currentId) {
+    return
+  }
+  ElMessageBox.confirm('确认取消该订单吗？', '取消订单', { type: 'warning' })
+    .then(async () => {
+      try {
+        loading.value = true
+        await cancelOrder(currentId)
+        ElMessage.success('订单已取消')
+        await fetchDetail(currentId)
+      } catch (error) {
+        console.error('取消订单失败', error)
+        if (!isHandledRequestError(error)) {
+          ElMessage.error('订单服务开小差了，请稍后再试')
+        }
+      } finally {
+        loading.value = false
+      }
+    })
+    .catch(() => undefined)
 }
 
-const handleReceive = async () => {
-  const currentId = (route.params.id as string) 
-  if (!currentId) return
-  ElMessageBox.confirm('确认收到货品？', '确认收货', { type: 'warning' }).then(async () => {
-    try {
-      loading.value = true 
-      const result: any = await confirmOrder(currentId)
-      if (result.code === 200 || result === undefined) { 
+const handleReceive = () => {
+  const currentId = route.params.id as string
+  if (!currentId) {
+    return
+  }
+  ElMessageBox.confirm('确认已收到货物吗？', '确认收货', { type: 'warning' })
+    .then(async () => {
+      try {
+        loading.value = true
+        const result: any = await confirmOrder(currentId)
+        if (result?.code && result.code !== 200) {
+          ElMessage.error('订单服务开小差了，请稍后再试')
+          return
+        }
         ElMessage.success('收货成功')
-        await fetchDetail() 
-      } else { ElMessage.error(result.message || '操作失败') }
-    } catch (e) { ElMessage.error('操作失败') }
-    finally { loading.value = false }
-  }).catch(() => {})
+        await fetchDetail(currentId)
+      } catch (error) {
+        console.error('确认收货失败', error)
+        if (!isHandledRequestError(error)) {
+          ElMessage.error('订单服务开小差了，请稍后再试')
+        }
+      } finally {
+        loading.value = false
+      }
+    })
+    .catch(() => undefined)
 }
 
-const handlePay = () => { ElMessage.success('跳转支付页面...') }
-const handleDelete = () => {
-  ElMessageBox.confirm('删除后无法恢复，确认删除？', '警告', { type: 'error' }).then(async () => {
-    await deleteOrder(order.value.id)
-    router.replace('/user?tab=orders')
+const handlePay = () => {
+  if (!order.value.id) {
+    return
+  }
+  router.push({
+    path: '/pay',
+    query: {
+      orderId: String(order.value.id),
+      amount: Number(order.value.totalFee || 0) / 100
+    }
   })
 }
 
-const goBack = () => router.back()
-const formatTime = (t?: string) => t ? t.replace('T', ' ') : ''
-const getPaymentMethod = (t: number) => ({1:'支付宝',2:'微信',3:'余额'}[t] || '在线支付')
+const handleDelete = () => {
+  ElMessageBox.confirm('删除后无法恢复，确认删除该订单吗？', '警告', {
+    type: 'error',
+    icon: CircleCloseFilled
+  })
+    .then(async () => {
+      try {
+        await deleteOrder(order.value.id)
+        ElMessage.success('删除成功')
+        router.replace('/user?tab=orders')
+      } catch (error) {
+        console.error('删除订单失败', error)
+        if (!isHandledRequestError(error)) {
+          ElMessage.error('订单服务开小差了，请稍后再试')
+        }
+      }
+    })
+    .catch(() => undefined)
+}
 
-onMounted(() => {
-  fetchDetail()
-})
+const goBack = () => router.back()
+
+watch(
+  () => route.params.id,
+  (id) => {
+    if (typeof id === 'string' && id) {
+      fetchDetail(id)
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped lang="scss">
-.order-detail-page { background: #f5f7fa; min-height: 100vh; padding: 24px 0; }
-.container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
-
-/* 头部样式 */
-.page-header {
-  background: #fff; padding: 16px 24px; border-radius: 8px; margin-bottom: 20px;
-  .header-info { display: flex; align-items: center; gap: 16px; .order-id { color: #606266; font-size: 14px; } }
+.order-detail-page {
+  min-height: calc(100vh - 64px);
+  background: #f5f7fb;
+  padding: 96px 0 88px;
 }
 
-/* 卡片通用 */
-.section-card { border: none; border-radius: 8px; margin-bottom: 20px; }
-.card-header { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #303133; }
-.action-bar { margin-top: 30px; display: flex; justify-content: center; gap: 16px; padding-bottom: 10px; }
+.order-detail-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
 
-/* 进度条微调 */
-:deep(.custom-steps .el-step__description) { font-size: 12px; margin-top: 5px; }
+.top-bar,
+.section-card {
+  border: none;
+  border-radius: 18px;
+}
 
-/* 收货地址 */
+.top-bar {
+  margin-bottom: 20px;
+  background: #fff;
+  padding: 16px 20px;
+}
+
+.page-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-title {
+  font-weight: 700;
+  color: #111827;
+}
+
+.order-no {
+  color: #6b7280;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 20px;
+}
+
+.side-column {
+  position: sticky;
+  top: 96px;
+  align-self: start;
+}
+
+.section-card + .section-card {
+  margin-top: 20px;
+}
+
+.section-head {
+  margin-bottom: 16px;
+}
+
+.section-head h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #111827;
+}
+
 .address-box {
-  padding: 10px 0;
-  .addr-user { font-size: 16px; font-weight: 500; color: #303133; margin-bottom: 8px; .addr-phone { margin-left: 10px; color: #606266; font-size: 14px; } }
-  .addr-detail { color: #606266; font-size: 14px; line-height: 1.5; }
+  padding: 18px;
+  border-radius: 16px;
+  background: #f9fafb;
 }
 
-/* 商品列表 - 卡片式布局核心样式 */
+.receiver {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.address {
+  margin-top: 8px;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
 .goods-list {
   display: flex;
   flex-direction: column;
-  
-  .goods-item {
-    display: flex;
-    align-items: center;
-    padding: 20px 0;
-    border-bottom: 1px solid #f2f2f2;
-    
-    &:last-child { border-bottom: none; padding-bottom: 0; }
-    &:first-child { padding-top: 0; }
+  gap: 16px;
+}
 
-    .goods-img {
-      width: 80px; height: 80px; border-radius: 6px; border: 1px solid #eee; margin-right: 16px; flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center; background: #fff;
-    }
+.goods-item {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) 160px;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  border-radius: 18px;
+  background: #f9fafb;
+}
 
-    .goods-main {
-      flex: 1;
-      margin-right: 20px;
-      .goods-name { font-size: 14px; color: #303133; margin-bottom: 8px; line-height: 1.4; }
-      .goods-props {
-        display: flex; flex-wrap: wrap; gap: 6px;
-        .prop-tag { font-size: 12px; color: #909399; background: #f4f4f5; padding: 2px 6px; border-radius: 4px; }
-      }
-    }
+.goods-image,
+.goods-image-fallback {
+  width: 96px;
+  height: 96px;
+  border-radius: 16px;
+  overflow: hidden;
+}
 
-    .goods-price-col {
-      text-align: right; margin-right: 30px; min-width: 80px;
-      .price { font-size: 14px; color: #303133; }
-      .num { font-size: 12px; color: #909399; margin-top: 4px; }
-    }
+.goods-image-fallback {
+  display: grid;
+  place-items: center;
+  background: #e5e7eb;
+  color: #6b7280;
+}
 
-    .goods-action-col {
-      display: flex; flex-direction: column; align-items: flex-end; gap: 10px; min-width: 100px;
-      .subtotal {
-        font-size: 13px; color: #606266;
-        span { color: #f56c6c; font-weight: 600; font-size: 15px; margin-left: 4px; }
-      }
-    }
+.goods-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.goods-spec,
+.goods-sku {
+  margin-top: 8px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.goods-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+  text-align: right;
+  color: #374151;
+}
+
+.meta-list,
+.action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #374151;
+}
+
+.meta-row.total {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.price-box {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.action-list {
+  margin-top: 24px;
+}
+
+@media (max-width: 960px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .side-column {
+    position: static;
   }
 }
 
-/* 订单侧边栏信息 */
-.order-meta-list {
-  padding: 0 10px;
-  .meta-item { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13px; .label { color: #909399; } .val { color: #303133; } }
-}
-.fee-section {
-  padding: 0 10px;
-  .fee-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; color: #606266; &.total { margin-top: 16px; align-items: flex-end; .total-price { color: #f56c6c; font-size: 20px; font-weight: bold; } } }
-}
-
-/* 移动端适配 */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .goods-item {
-    flex-wrap: wrap; position: relative;
-    .goods-main { margin-right: 0; width: calc(100% - 100px); } /* 图片80+间距 */
-    .goods-price-col { position: absolute; right: 0; top: 20px; margin-right: 0; text-align: right; }
-    .goods-action-col { width: 100%; flex-direction: row; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px dashed #eee; }
+    grid-template-columns: 1fr;
+  }
+
+  .goods-side {
+    align-items: flex-start;
+    text-align: left;
   }
 }
 </style>

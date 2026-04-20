@@ -1,859 +1,970 @@
-<template>
-  <div class="product-detail-page">
-    <div class="container">
-      
-      <!-- 面包屑导航 -->
-      <div class="breadcrumb-area">
-        <el-breadcrumb separator-icon="ArrowRight" class="breadcrumb">
-          <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-          <el-breadcrumb-item>商品详情</el-breadcrumb-item>
-          <el-breadcrumb-item class="current-product-name" :title="itemData?.name">{{ itemData?.name }}</el-breadcrumb-item>
-        </el-breadcrumb>
-      </div>
-
-      <div class="main-card" v-loading="loading">
-        <el-row :gutter="40" v-if="itemData">
-          
-          <!-- 左侧：图片展示 -->
-          <el-col :xs="24" :sm="12" :md="11">
-            <div class="gallery-container">
-              <!-- 大图区域 -->
-              <div class="main-img-wrap">
-                <el-image 
-                  :src="displayImage" 
-                  fit="contain" 
-                  class="hero-image"
-                  :preview-src-list="previewImageList"
-                />
-              </div>
-              
-              <!-- 缩略图列表（根据选中规格动态变化） -->
-              <div 
-                class="thumb-row" 
-                v-if="filteredThumbImages && filteredThumbImages.length > 0"
-              >
-                <div 
-                  v-for="(img, index) in filteredThumbImages" 
-                  :key="index"
-                  class="thumb-box"
-                  :class="{ active: displayImage === img }"
-                  @mouseenter="tempImage = img"
-                  @mouseleave="tempImage = ''"
-                  @click="handleThumbClick(img)"
-                >
-                  <img :src="img" />
-                </div>
-              </div>
-            </div>
-          </el-col>
-
-          <!-- 右侧：信息与交互 -->
-          <el-col :xs="24" :sm="12" :md="13">
-            <div class="info-container">
-              <h1 class="prod-title">{{ itemData.name }}</h1>
-              <p class="prod-desc">{{ itemData.subTitle }}</p>
-
-              <!-- 价格区 -->
-              <div class="price-box">
-                <div class="price-main">
-                  <span class="currency">¥</span>
-                  <span class="amount">{{ formatPrice(currentSku ? currentSku.price  : itemData.price ) }}</span>
-                  <span v-if="itemData.originalPrice" class="original-price">
-                    ¥{{ formatPrice(itemData.originalPrice ) }}
-                  </span>
-                </div>
-                <div class="tags-row">
-                  <el-tag v-if="itemData.tags" type="danger" size="small" round>{{ itemData.tags.split(',')[0] }}</el-tag>
-                  <span class="stock-text">
-                    库存 {{ currentSku ? currentSku.stock : itemData.skuList?.reduce((a, b) => a + b.stock, 0) }} 件
-                  </span>
-                  <span class="sold-text">已售 {{ itemData.sold }}</span>
-                </div>
-              </div>
-
-              <el-divider border-style="dashed" />
-
-              <!-- 规格选择器 -->
-              <div class="sku-selector" v-if="displaySpecTemplate.length">
-                <div 
-                  class="sku-line" 
-                  v-for="(specRow, rowIndex) in displaySpecTemplate" 
-                  :key="specRow.name"
-                >
-                  <span class="label">{{ specRow.name }}</span>
-                  <div class="options">
-                    <span 
-                      v-for="(val, valIndex) in specRow.values" 
-                      :key="val"
-                      class="option-pill"
-                      :class="{ 
-                        active: isSpecSelected(specRow.name, val),
-                        disabled: isSpecDisabled(specRow.name, val)
-                      }"
-                      @click="selectSpec(specRow.name, val)"
-                    >
-                      {{ val }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="sku-selector">
-                <div class="sku-line">
-                  <span class="label">购买数量</span>
-                  <el-input-number 
-                    v-model="quantity" 
-                    :min="1" 
-                    :max="buyMax" 
-                    :disabled="!canBuy"
-                  />
-                </div>
-              </div>
-
-              <!-- 按钮 -->
-              <div class="btn-group">
-                <el-button 
-                  class="btn-cart" 
-                  size="large" 
-                  plain 
-                  round 
-                  @click="addToCart" 
-                  :disabled="!canBuy"
-                  :loading="btnLoading"
-                >
-                  加入购物车
-                </el-button>
-                <el-button class="btn-buy" size="large" type="primary" round @click="buyNow" :disabled="!canBuy">立即购买</el-button>
-              </div>
-            </div>
-          </el-col>
-        </el-row>
-        <el-empty v-else description="未找到商品信息"></el-empty>
-      </div>
-
-      <!-- 底部 Tabs -->
-      <div class="details-card detail-tabs" v-if="itemData">
-        <el-tabs v-model="activeTab" class="centered-tabs" type="card">
-          
-          <!-- Tab 1: 商品详情 -->
-          <el-tab-pane label="商品详情" name="detail">
-             <div class="detail-content">
-               <div v-if="itemData.detailHtml" v-html="itemData.detailHtml" class="detail-html-content"></div>
-               <div v-else class="no-detail">暂无图文详情</div>
-             </div>
-          </el-tab-pane>
-          
-          <!-- Tab 2: 规格参数 -->
-          <el-tab-pane label="规格参数" name="specs">
-             <div class="specs-content">
-                <el-table :data="itemData.skuList" border style="width: 100%">
-                  <el-table-column label="型号组合">
-                    <template #default="scope">{{ formatSpecsMap(scope.row.specs) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="price" label="价格">
-                    <template #default="scope">¥{{ formatPrice(scope.row.price) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="stock" label="库存" />
-                </el-table>
-             </div>
-          </el-tab-pane>
-
-          <!-- ★★★ Tab 3: 用户评价 (已按要求修改) ★★★ -->
-          <el-tab-pane label="用户评价" name="comments">
-            <div class="comments-container" v-loading="commentLoading">
-              
-              <!-- 评价统计头 -->
-              <div class="comments-header" v-if="commentList.length > 0">
-                <div class="header-left">
-                  <span class="big-score">{{ averageRating }}</span>
-                  <div class="score-meta">
-                    <span class="meta-label">综合评分</span>
-                    <el-rate v-model="averageRating" disabled size="small" text-color="#ff9900" />
-                  </div>
-                </div>
-                <div class="header-right">
-                  <span class="total-count">共 {{ commentList.length }} 条评价</span>
-                </div>
-              </div>
-
-              <!-- 评价列表 -->
-              <div class="comment-list" v-if="commentList.length > 0">
-                <div v-for="comment in commentList" :key="comment.id" class="comment-item">
-                  
-                  <!-- 用户信息行 -->
-                  <div class="user-row">
-                    <el-avatar :size="40" :src="comment.userAvatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" class="user-avatar" />
-                    <div class="user-info-col">
-                      <div class="nickname">{{ comment.userNickname || '匿名用户' }}</div>
-                      <div class="meta-row">
-                        <el-rate 
-                          v-model="comment.rating" 
-                          disabled 
-                          size="small" 
-                          text-color="#ff9900"
-                          class="mini-rate"
-                        />
-                        <span class="separator">|</span>
-                        <span class="time">{{ comment.createTime }}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- 评价内容 -->
-                  <div class="content-text">
-                    {{ comment.content }}
-                  </div>
-                  
-                  <!-- 晒图 -->
-                  <div class="review-images" v-if="comment.images && comment.images.length">
-                    <el-image 
-                      v-for="(img, idx) in comment.images" 
-                      :key="idx"
-                      :src="img"
-                      :preview-src-list="comment.images"
-                      class="review-img"
-                      fit="cover"
-                      lazy
-                    />
-                  </div>
-
-                  <!-- ★★★ 商品信息 Footer (仿 UserCenter 风格) ★★★ -->
-                  <div class="card-footer-mini">
-                    <div class="footer-product">
-                      <el-icon><Goods /></el-icon>
-                      <span class="product-link">
-                        {{ itemData.name }}
-                      </span>
-                      
-                      <!-- SKU 标签 -->
-                      <span class="sku-text" v-if="comment.skuSpecs">
-                        <el-tag 
-                          class="sku-tag" 
-                          type="info" 
-                          effect="plain" 
-                          size="small"
-                        >
-                          {{ formatSku(comment.skuSpecs) }}
-                        </el-tag>
-                      </span>
-
-                      <!-- 商品小图
-                      <el-image 
-                        v-if="itemData.bannerImages && itemData.bannerImages.length"
-                        :src="itemData.bannerImages[0]" 
-                        class="footer-item-img" 
-                        fit="cover"
-                      ></el-image> -->
-                    </div>
-                  </div>
-
-                  <!-- 商家回复 -->
-                  <div class="merchant-reply" v-if="comment.merchantReplyContent">
-                    <div class="reply-header">
-                       <span class="shop-badge">商家</span>
-                       <span class="reply-title">回复：</span>
-                    </div>
-                    <div class="reply-content">{{ comment.merchantReplyContent }}</div>
-                  </div>
-
-                </div>
-              </div>
-
-              <el-empty v-else description="暂无评价，快来抢沙发吧~" :image-size="120" />
-            </div>
-          </el-tab-pane>
-
-        </el-tabs>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive } from 'vue'
-import { ElMessage } from 'element-plus'
+import { computed, onMounted, reactive, ref, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-// 引入 Goods 图标
-import { Goods } from '@element-plus/icons-vue' 
-import { itemApi } from '@/api/item'
+import { ElMessage } from 'element-plus'
+import { ChatLineRound, Goods, House, ShoppingCart, Van } from '@element-plus/icons-vue'
 import { addItem2Cart } from '@/api/cart'
-import { listComments, type CommentVO } from '@/api/comment' 
+import { type CommentVO, listComments } from '@/api/comment'
+import { itemApi, type ItemDetailModel, type ItemSkuModel, type ItemSpecTemplateItem } from '@/api/item'
+import { isHandledRequestError } from '@/utils/request'
 
-const router = useRouter();
 const route = useRoute()
+const router = useRouter()
 
-// --- 接口定义 ---
-interface SpecTemplateItem {
-  name: string
-  values: string[]
-}
-interface SkuVO {
-  id: number
-  specs: Record<string, string>
-  price: number
-  stock: number
-  image: string
-}
-interface ItemDetailVO {
-  id: number
-  name: string
-  subTitle: string
-  price: number
-  originalPrice?: number
-  tags?: string
-  sold?: number
-  bannerImages: string[]
-  detailHtml?: string
-  specTemplate: SpecTemplateItem[]
-  skuList: SkuVO[]
-  itemName: string
-  itemImage: string
-}
+const loading = shallowRef(false)
+const commentsLoading = shallowRef(false)
+const actionLoading = shallowRef(false)
+const quantity = shallowRef(1)
+const previewImage = shallowRef('')
 
-// --- 状态 ---
-const loading = ref(false)
-const btnLoading = ref(false)
-const itemData = ref<ItemDetailVO | null>()
+const itemData = ref<ItemDetailModel | null>(null)
+const comments = ref<CommentVO[]>([])
 const selectedSpecs = reactive<Record<string, string>>({})
-const quantity = ref(1)
-const activeTab = ref('detail')
-const tempImage = ref('')
 
-// ★★★ 评价状态 ★★★
-const commentList = ref<CommentVO[]>([])
-const commentLoading = ref(false)
+type SkuImageThumb = {
+  key: string
+  image: string
+  sku: ItemSkuModel
+  skuIds: number[]
+}
 
-// --- 核心逻辑 ---
-
-const fetchProductDetail = async () => {
-  loading.value = true
-  try {
-    const productId = Number(route.params.id) || 1
-    const res = await itemApi.getItemById(productId)
-    if (res && res.data) {
-      itemData.value = res.data
-      initDefaultSelection()
-      fetchComments() 
-    }
-  } catch (err) {
-    console.error(err)
-    ElMessage.error('获取商品详情失败')
-  } finally {
-    loading.value = false
+const formatPrice = (price?: number | string | null) => {
+  if (price === undefined || price === null || price === '') {
+    return '0.00'
   }
+  return (Number(price) / 100).toFixed(2)
 }
 
-// ★★★ 获取评论逻辑 ★★★
-const fetchComments = async () => {
-  commentLoading.value = true
-  try {
-    const res: any = await listComments(itemData.value!.id)
-    const allComments = Array.isArray(res) ? res : (res.data || [])
-    commentList.value = allComments
-  } catch (error) {
-    console.error('获取评论失败', error)
-  } finally {
-    commentLoading.value = false
-  }
+const normalizeImageUrl = (image?: string | null) => {
+  return image?.trim() || ''
 }
 
-// 计算平均分
-const averageRating = computed(() => {
-  if (commentList.value.length === 0) return 5
-  const total = commentList.value.reduce((sum, c) => sum + (c.rating || 5), 0)
-  return Number((total / commentList.value.length).toFixed(1))
-})
+const getItemId = () => Number(route.params.id)
 
-const normalizeSpecTemplate = (template?: SpecTemplateItem[]) => {
-  if (!Array.isArray(template)) return []
-  return template
-    .map((row) => ({
-      name: (row?.name || '').trim(),
-      values: Array.isArray(row?.values) ? row.values.map((v) => (v || '').trim()).filter(Boolean) : []
-    }))
-    .filter((row) => row.name && row.values.length)
-}
-
-const buildSpecTemplateFromSkus = (skuList?: SkuVO[]) => {
+const buildSpecTemplateFromSkus = (skuList?: ItemSkuModel[]) => {
   if (!Array.isArray(skuList) || !skuList.length) {
     return []
   }
-  const specMap = new Map<string, Set<string>>()
+  const map = new Map<string, Set<string>>()
   skuList.forEach((sku) => {
-    Object.entries(sku?.specs || {}).forEach(([specName, specValue]) => {
-      const key = (specName || '').trim()
-      const value = String(specValue || '').trim()
-      if (!key || !value) return
-      if (!specMap.has(key)) {
-        specMap.set(key, new Set<string>())
+    Object.entries(sku.specs || {}).forEach(([key, value]) => {
+      if (!map.has(key)) {
+        map.set(key, new Set())
       }
-      specMap.get(key)!.add(value)
+      map.get(key)?.add(value)
     })
   })
-  return Array.from(specMap.entries()).map(([name, values]) => ({
+  return Array.from(map.entries()).map(([name, values]) => ({
     name,
     values: Array.from(values)
   }))
 }
 
-const displaySpecTemplate = computed<SpecTemplateItem[]>(() => {
-  const fromTemplate = normalizeSpecTemplate(itemData.value?.specTemplate)
-  if (fromTemplate.length) {
-    return fromTemplate
+const specTemplate = computed<ItemSpecTemplateItem[]>(() => {
+  if (itemData.value?.specTemplate?.length) {
+    return itemData.value.specTemplate
   }
   return buildSpecTemplateFromSkus(itemData.value?.skuList)
 })
 
-// ★★★ 格式化 SKU 字符串 (去除 JSON 符号) ★★★
-const formatSku = (skuStr: string) => {
-  if (!skuStr) return '';
-  try {
-    const cleanStr = skuStr.replace(/[{"}]/g, '').replace(/"/g, '').replace(/:/g, ': ');
-    return cleanStr;
-  } catch (e) {
-    return skuStr;
+const currentSku = computed<ItemSkuModel | null>(() => {
+  const skuList = itemData.value?.skuList || []
+  if (!skuList.length) {
+    return null
   }
-}
-
-const initDefaultSelection = () => {
-  if (!itemData.value?.skuList?.length) return
-  Object.keys(selectedSpecs).forEach((key) => {
-    delete selectedSpecs[key]
-  })
-  const firstValidSku = itemData.value.skuList.find(s => s.stock > 0) || itemData.value.skuList[0]
-  if (firstValidSku && firstValidSku.specs) {
-    Object.assign(selectedSpecs, firstValidSku.specs)
+  const specNames = specTemplate.value.map(item => item.name)
+  if (!specNames.length) {
+    return skuList[0]
   }
-}
-
-const hasColorSpec = computed(() => {
-  return displaySpecTemplate.value.some(spec => spec.name.includes('颜色'))
+  return skuList.find((sku) =>
+    specNames.every((name) => sku.specs?.[name] === selectedSpecs[name])
+  ) || null
 })
 
-const currentSku = computed(() => {
-  if (!itemData.value) return null
-  return itemData.value.skuList.find(sku => {
-    const skuSpecs = sku.specs
-    if (Object.keys(skuSpecs).length !== Object.keys(selectedSpecs).length) return false
-    for (const key in skuSpecs) {
-      if (skuSpecs[key] !== selectedSpecs[key]) return false
+const currentPrice = computed(() => currentSku.value?.price ?? itemData.value?.price ?? 0)
+
+const currentStock = computed(() => {
+  if (currentSku.value) {
+    return currentSku.value.stock || 0
+  }
+  if (typeof itemData.value?.stock === 'number') {
+    return itemData.value.stock
+  }
+  return (itemData.value?.skuList || []).reduce((sum, sku) => sum + (sku.stock || 0), 0)
+})
+
+const fallbackGalleryImages = computed(() => {
+  const images = new Set<string>()
+  ;(itemData.value?.bannerImages || []).forEach((image) => {
+    const normalizedImage = normalizeImageUrl(image)
+    if (normalizedImage) {
+      images.add(normalizedImage)
     }
-    return true
   })
+  const itemImage = normalizeImageUrl(itemData.value?.image)
+  if (itemImage) {
+    images.add(itemImage)
+  }
+  return Array.from(images)
 })
 
-const canBuy = computed(() => {
-  return currentSku.value && currentSku.value.stock > 0
-})
+const getSkuMatchScore = (sku: ItemSkuModel) => {
+  return Object.entries(selectedSpecs).reduce((score, [key, value]) => {
+    return sku.specs?.[key] === value ? score + 1 : score
+  }, 0)
+}
 
-const buyMax = computed(() => {
-  if (!currentSku.value) return 1
-  const stock = currentSku.value.stock
-  return stock > 0 ? stock : 1
+const pickBestSkuForImage = (candidates: ItemSkuModel[]) => {
+  const availableCandidates = candidates.filter(sku => (sku.stock || 0) > 0)
+  const source = availableCandidates.length ? availableCandidates : candidates
+  return [...source].sort((a, b) => getSkuMatchScore(b) - getSkuMatchScore(a))[0]
+}
+
+const skuImageThumbs = computed<SkuImageThumb[]>(() => {
+  const skuList = itemData.value?.skuList || []
+  if (!skuList.length) {
+    return []
+  }
+  const imageGroupMap = new Map<string, ItemSkuModel[]>()
+  skuList.forEach((sku) => {
+    const image = normalizeImageUrl(sku.image)
+    if (!image) {
+      return
+    }
+    if (!imageGroupMap.has(image)) {
+      imageGroupMap.set(image, [])
+    }
+    imageGroupMap.get(image)?.push(sku)
+  })
+  return Array.from(imageGroupMap.entries()).map(([image, skuGroup]) => {
+    const bestSku = pickBestSkuForImage(skuGroup)
+    return {
+      key: `${image}-${bestSku.id}`,
+      image,
+      sku: bestSku,
+      skuIds: skuGroup.map(sku => sku.id)
+    }
+  })
 })
 
 const displayImage = computed(() => {
-  if (tempImage.value) return tempImage.value
-  if (currentSku.value?.image) return currentSku.value.image
-  
-  // ★★★ 如果当前SKU没有图片，但选中了颜色规格，优先显示该颜色的第一张图片 ★★★
-  const colorSpecName = displaySpecTemplate.value.find(s => s.name.includes('颜色'))?.name
-  if (colorSpecName && selectedSpecs[colorSpecName] && itemData.value?.skuList?.length) {
-    const matchedSkus = itemData.value.skuList.filter(sku => {
-      return sku.specs[colorSpecName] === selectedSpecs[colorSpecName]
-    })
-    const matchedImages = matchedSkus
-      .map(sku => sku.image)
-      .filter(img => img) // 过滤空值
-    if (matchedImages.length > 0) {
-      return matchedImages[0] // 返回该颜色的第一张图片
-    }
+  if (previewImage.value) {
+    return previewImage.value
   }
-  
-  if (itemData.value?.bannerImages?.length) return itemData.value.bannerImages[0]
-  return ''
+  return normalizeImageUrl(currentSku.value?.image) || fallbackGalleryImages.value[0] || ''
 })
 
-const previewImageList = computed(() => {
-  const images: string[] = []
-  if (currentSku.value?.image) images.push(currentSku.value.image)
-  if (itemData.value?.bannerImages) images.push(...itemData.value.bannerImages)
-  return [...new Set(images)]
-})
+const canBuy = computed(() => Boolean(itemData.value) && currentStock.value > 0)
+const canEnterShop = computed(() => Boolean(itemData.value?.shopId))
 
-// ★★★ 根据选中规格动态过滤缩略图列表 ★★★
-// 规则：只有存在颜色规格时，才根据颜色过滤；否则显示商品的所有图片（bannerImages）
-const filteredThumbImages = computed(() => {
-  if (!itemData.value) {
+const trustItems = computed(() => {
+  const data = itemData.value
+  if (!data) {
     return []
   }
-
-  // 检查是否有颜色规格
-  const colorSpecName = displaySpecTemplate.value.find(s => s.name.includes('颜色'))?.name
-  
-  // 如果有颜色规格，且已选中颜色，则根据颜色过滤显示匹配的SKU图片
-  if (colorSpecName && selectedSpecs[colorSpecName] && itemData.value.skuList?.length) {
-    const matchedSkus = itemData.value.skuList.filter(sku => {
-      return sku.specs[colorSpecName] === selectedSpecs[colorSpecName]
-    })
-    
-    const matchedImages = matchedSkus
-      .map(sku => sku.image)
-      .filter(img => img) // 过滤空值
-    
-    // 如果有匹配的SKU图片，返回这些图片；否则回退到bannerImages
-    if (matchedImages.length > 0) {
-      return [...new Set(matchedImages)]
+  return [
+    { label: '店铺', value: data.shopName || '未绑定店铺', icon: House },
+    { label: '发货', value: data.shippingDesc || '运费规则待补充', icon: Van },
+    { label: '销量', value: `已售 ${data.sold || 0}`, icon: Goods },
+    {
+      label: '口碑',
+      value: data.commentCount ? `${data.positiveRate ?? 0}%好评 / ${data.commentCount}条评价` : '暂无评价',
+      icon: ChatLineRound
     }
-  }
-
-  // 如果没有颜色规格，或者颜色匹配失败，显示商品的所有图片（bannerImages）
-  return itemData.value.bannerImages || []
+  ]
 })
 
-// --- 交互方法 ---
+const reviewSummary = computed(() => {
+  const data = itemData.value
+  if (!data?.commentCount) {
+    return '暂无评价'
+  }
+  return `${data.positiveRate ?? 0}%好评`
+})
 
-// ★★★ 优化：点击缩略图时，自动选择对应的所有规格 ★★★
-const handleThumbClick = (imgUrl: string) => {
-  if (!itemData.value?.skuList) return
-  const targetSku = itemData.value.skuList.find(sku => sku.image === imgUrl)
-  
-  if (targetSku && targetSku.specs) {
-    // 自动选择该SKU对应的所有规格
-    Object.keys(targetSku.specs).forEach(specName => {
-      if (targetSku.specs[specName]) {
-        selectedSpecs[specName] = targetSku.specs[specName]
+const formatSpecs = (specs?: Record<string, string>) => {
+  if (!specs) {
+    return ''
+  }
+  return Object.entries(specs).map(([key, value]) => `${key}: ${value}`).join(' / ')
+}
+
+const formatCommentSpecs = (specs?: Record<string, string> | string | null) => {
+  if (!specs) {
+    return ''
+  }
+  if (typeof specs === 'string') {
+    return specs
+  }
+  return formatSpecs(specs)
+}
+
+const initSelectedSpecs = () => {
+  Object.keys(selectedSpecs).forEach((key) => delete selectedSpecs[key])
+  const firstAvailableSku = (itemData.value?.skuList || []).find(sku => sku.stock > 0) || itemData.value?.skuList?.[0]
+  if (!firstAvailableSku?.specs) {
+    return
+  }
+  Object.assign(selectedSpecs, firstAvailableSku.specs)
+}
+
+const isSpecSelected = (specName: string, value: string) => selectedSpecs[specName] === value
+
+const isSpecDisabled = (specName: string, value: string) => {
+  const skuList = itemData.value?.skuList || []
+  if (!skuList.length) {
+    return false
+  }
+  const nextSelection = { ...selectedSpecs, [specName]: value }
+  return !skuList.some((sku) => {
+    if (sku.stock <= 0) {
+      return false
     }
-    })
-    quantity.value = 1
-    // 清除临时图片，让主图显示当前SKU的图片
-    tempImage.value = ''
-  }
-}
-
-const isSpecSelected = (specName: string, val: string) => selectedSpecs[specName] === val
-const isSpecDisabled = (specName: string, val: string) => false
-
-const selectSpec = (specName: string, val: string) => {
-  if (!itemData.value?.skuList?.length) return
-  const nextSelection = { ...selectedSpecs, [specName]: val }
-  let matchedSku = itemData.value.skuList.find((sku) => {
-    return Object.entries(nextSelection).every(([k, v]) => sku.specs[k] === v)
+    return Object.entries(nextSelection).every(([key, selected]) => !selected || sku.specs?.[key] === selected)
   })
+}
 
-  // 兼容历史脏数据：不同SKU规格键不一致时，至少按当前点击的规格值切换到对应SKU
-  if (!matchedSku) {
-    matchedSku = itemData.value.skuList.find((sku) => sku.specs[specName] === val)
+const selectSpec = (specName: string, value: string) => {
+  if (isSpecDisabled(specName, value)) {
+    return
   }
-
-  if (matchedSku?.specs) {
-    Object.keys(selectedSpecs).forEach((key) => {
-      delete selectedSpecs[key]
-    })
-    Object.assign(selectedSpecs, matchedSku.specs)
-  } else {
-    selectedSpecs[specName] = val
-  }
+  selectedSpecs[specName] = value
   quantity.value = 1
+  previewImage.value = ''
 }
 
-const formatPrice = (price?: number) => {
-  if (price === undefined || price === null) return '0.00'
-  return (price / 100).toFixed(2)
+const selectSkuThumb = (thumb: SkuImageThumb) => {
+  Object.keys(selectedSpecs).forEach((key) => delete selectedSpecs[key])
+  Object.assign(selectedSpecs, thumb.sku.specs || {})
+  quantity.value = 1
+  previewImage.value = ''
 }
 
-const formatSpecsMap = (specs: Record<string, string>) => Object.values(specs).join(' / ')
+const isSkuThumbActive = (thumb: SkuImageThumb) => {
+  return currentSku.value ? thumb.skuIds.includes(currentSku.value.id) : displayImage.value === thumb.image
+}
+
+const loadItemDetail = async () => {
+  const id = getItemId()
+  if (!id) {
+    itemData.value = null
+    return
+  }
+
+  loading.value = true
+  try {
+    const res: any = await itemApi.getItemById(id)
+    itemData.value = res?.data || null
+    initSelectedSpecs()
+    previewImage.value = ''
+  } catch (error) {
+    console.error('加载商品详情失败', error)
+    itemData.value = null
+    if (!isHandledRequestError(error)) {
+      ElMessage.error('当前内容加载失败，请稍后再试')
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+const loadComments = async () => {
+  const id = getItemId()
+  if (!id) {
+    comments.value = []
+    return
+  }
+
+  commentsLoading.value = true
+  try {
+    const res: any = await listComments(id)
+    comments.value = Array.isArray(res) ? res : (res?.data || [])
+  } catch (error) {
+    console.error('加载评论失败', error)
+    comments.value = []
+  } finally {
+    commentsLoading.value = false
+  }
+}
+
+const buildCartPayload = () => {
+  if (!itemData.value) {
+    return null
+  }
+  return {
+    itemId: itemData.value.id,
+    skuId: currentSku.value?.id || 0,
+    num: quantity.value,
+    price: currentPrice.value,
+    name: itemData.value.name,
+    image: normalizeImageUrl(currentSku.value?.image) || displayImage.value || normalizeImageUrl(itemData.value.image) || '',
+    spec: JSON.stringify(currentSku.value?.specs || {})
+  }
+}
 
 const addToCart = async () => {
-  const Auth = localStorage.getItem('Authorization')
-  if (!Auth) {
-    ElMessage.error('请先登录')
+  if (!canBuy.value) {
+    ElMessage.warning('当前商品不可购买')
+    return false
+  }
+  const token = localStorage.getItem('Authorization')
+  if (!token) {
+    ElMessage.warning('请先登录')
     router.push('/login')
-    return
+    return false
   }
-  if (!currentSku.value) {
-    ElMessage.warning('请选择完整的规格')
-    return
-  }
-  if (!itemData.value) return
 
-  const params = {
-    itemId: itemData.value.id,
-    skuId: currentSku.value.id,
-    num: quantity.value,
-    spec: JSON.stringify(currentSku.value.specs),
-    price: currentSku.value.price,
-    image: currentSku.value.image,
-    name: itemData.value.name
+  const payload = buildCartPayload()
+  if (!payload) {
+    return false
   }
-  
+
+  actionLoading.value = true
   try {
-    btnLoading.value = true
-    await addItem2Cart(params)
+    await addItem2Cart(payload)
     ElMessage.success('已加入购物车')
+    return true
   } catch (error) {
-    console.error(error)
-    ElMessage.error('加入购物车失败')
+    console.error('加入购物车失败', error)
+    if (!isHandledRequestError(error)) {
+      ElMessage.error('加入购物车失败，请稍后重试')
+    }
+    return false
   } finally {
-    btnLoading.value = false
+    actionLoading.value = false
   }
 }
 
 const buyNow = async () => {
-  if (!currentSku.value) {
-    ElMessage.warning('请选择完整的规格')
-    return
-  }
-  const authToken = localStorage.getItem('Authorization')
-  if (!authToken) {
-    ElMessage.error('请先登录')
-    router.push('/login')
-    return
-  }
-  if (!itemData.value || !currentSku.value) {
-    ElMessage.warning('商品信息不完整')
-    return
-  }
-  if (currentSku.value.stock < quantity.value) {
-    ElMessage.error(`库存不足，当前库存：${currentSku.value.stock}`)
-    return
-  }
-  
-  try {
-    btnLoading.value = true
-    const params = {
-      itemId: itemData.value.id,
-      skuId: currentSku.value.id,
-      num: quantity.value,
-      spec: JSON.stringify(currentSku.value.specs),
-      price: currentSku.value.price,
-      image: currentSku.value.image,
-      name: itemData.value.name
-    }
-    
-    await addItem2Cart(params)
-    ElMessage.success('商品已添加到购物车')
+  const success = await addToCart()
+  if (success) {
     router.push('/cart')
-  } catch (error) {
-    console.error('立即购买失败:', error)
-    ElMessage.error('操作失败，请重试')
-  } finally {
-    btnLoading.value = false
   }
 }
 
-onMounted(() => {
-  fetchProductDetail()
+const goToShop = () => {
+  const shopId = itemData.value?.shopId
+  if (!shopId) {
+    ElMessage.warning('当前商品未绑定店铺')
+    return
+  }
+  router.push(`/shop/${shopId}`)
+}
+
+watch(() => route.params.id, async () => {
+  await loadItemDetail()
+  await loadComments()
+})
+
+onMounted(async () => {
+  await loadItemDetail()
+  await loadComments()
 })
 </script>
 
+<template>
+  <div class="detail-page">
+    <div class="detail-container">
+      <div class="breadcrumb-row">
+        <el-breadcrumb separator="/">
+          <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+          <el-breadcrumb-item>商品详情</el-breadcrumb-item>
+          <el-breadcrumb-item>{{ itemData?.name || '详情加载中' }}</el-breadcrumb-item>
+        </el-breadcrumb>
+      </div>
+
+      <section v-loading="loading" class="hero-card">
+        <template v-if="itemData">
+          <div class="gallery-panel">
+            <div class="main-image-wrap">
+              <img class="main-image" :src="displayImage || '/placeholder-image.svg'" :alt="itemData.name">
+            </div>
+            <div v-if="skuImageThumbs.length > 1" class="thumb-list">
+              <button
+                v-for="thumb in skuImageThumbs"
+                :key="thumb.key"
+                class="thumb-btn"
+                :class="{ active: isSkuThumbActive(thumb) }"
+                @mouseenter="previewImage = thumb.image"
+                @mouseleave="previewImage = ''"
+                @click="selectSkuThumb(thumb)"
+              >
+                <img :src="thumb.image" :alt="itemData.name">
+              </button>
+            </div>
+            <div v-else-if="fallbackGalleryImages.length > 1" class="thumb-list">
+              <button
+                v-for="image in fallbackGalleryImages"
+                :key="image"
+                class="thumb-btn"
+                :class="{ active: displayImage === image }"
+                @mouseenter="previewImage = image"
+                @mouseleave="previewImage = ''"
+                @click="previewImage = image"
+              >
+                <img :src="image" :alt="itemData.name">
+              </button>
+            </div>
+          </div>
+
+          <div class="info-panel">
+            <div class="trust-top">
+              <div class="shop-line">
+                <span class="shop-name">{{ itemData.shopName || '未绑定店铺' }}</span>
+                <span v-if="itemData.isSelf === 1" class="self-tag">自营</span>
+              </div>
+              <span class="shipping-chip">{{ itemData.shippingDesc || '运费规则待补充' }}</span>
+            </div>
+
+            <h1 class="item-title">{{ itemData.name }}</h1>
+            <p v-if="itemData.subTitle" class="item-subtitle">{{ itemData.subTitle }}</p>
+
+            <div class="price-card">
+              <div class="price-main">
+                <span class="currency">¥</span>
+                <span class="amount">{{ formatPrice(currentPrice) }}</span>
+                <span v-if="itemData.originalPrice && itemData.originalPrice > currentPrice" class="original-price">
+                  ¥{{ formatPrice(itemData.originalPrice) }}
+                </span>
+              </div>
+              <div class="price-side">
+                <span class="stat-pill">{{ reviewSummary }}</span>
+                <span class="stat-pill">已售 {{ itemData.sold || 0 }}</span>
+              </div>
+            </div>
+
+            <div class="trust-grid">
+              <div v-for="trust in trustItems" :key="trust.label" class="trust-item">
+                <el-icon class="trust-icon"><component :is="trust.icon" /></el-icon>
+                <div class="trust-content">
+                  <div class="trust-label">{{ trust.label }}</div>
+                  <div class="trust-value">{{ trust.value }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="base-info">
+              <span v-if="itemData.brand" class="base-tag">品牌：{{ itemData.brand }}</span>
+              <span v-if="itemData.category" class="base-tag">分类：{{ itemData.category }}</span>
+              <span class="base-tag">库存：{{ currentStock }}</span>
+            </div>
+
+            <div v-if="specTemplate.length" class="selector-section">
+              <div v-for="group in specTemplate" :key="group.name" class="selector-row">
+                <span class="selector-label">{{ group.name }}</span>
+                <div class="selector-options">
+                  <button
+                    v-for="value in group.values"
+                    :key="value"
+                    class="selector-option"
+                    :class="{ active: isSpecSelected(group.name, value), disabled: isSpecDisabled(group.name, value) }"
+                    @click="selectSpec(group.name, value)"
+                  >
+                    {{ value }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="selector-row">
+              <span class="selector-label">数量</span>
+              <el-input-number v-model="quantity" :min="1" :max="Math.max(currentStock, 1)" :disabled="!canBuy" />
+            </div>
+
+            <div class="action-row">
+              <el-button class="shop-entry-btn" size="large" plain :disabled="!canEnterShop" @click="goToShop">
+                进店
+              </el-button>
+              <el-button plain size="large" :loading="actionLoading" :disabled="!canBuy" @click="addToCart">
+                <el-icon><ShoppingCart /></el-icon>
+                加入购物车
+              </el-button>
+              <el-button type="primary" size="large" :disabled="!canBuy" @click="buyNow">
+                立即购买
+              </el-button>
+            </div>
+          </div>
+        </template>
+
+        <el-empty v-else description="商品不存在或已下架" :image-size="180" />
+      </section>
+
+      <section v-if="itemData" class="detail-sections">
+        <el-tabs>
+          <el-tab-pane label="商品评价">
+            <div v-loading="commentsLoading" class="review-list">
+              <div v-if="comments.length" class="review-cards">
+                <article v-for="comment in comments" :key="comment.id" class="review-card">
+                  <div class="review-head">
+                    <div class="review-user">
+                      <img class="avatar" :src="comment.userAvatar || '/placeholder-avatar.svg'" :alt="comment.userNickname">
+                      <div>
+                        <div class="nickname">{{ comment.userNickname || '匿名用户' }}</div>
+                        <div class="time">{{ comment.updateTime || comment.createTime }}</div>
+                      </div>
+                    </div>
+                    <el-rate :model-value="comment.rating" disabled text-color="#f59e0b" />
+                  </div>
+                  <div v-if="comment.skuSpecs" class="review-spec">{{ formatCommentSpecs(comment.skuSpecs) }}</div>
+                  <p class="review-content">{{ comment.content }}</p>
+                  <div v-if="comment.images?.length" class="review-images">
+                    <img v-for="image in comment.images" :key="image" class="review-image" :src="image" :alt="comment.userNickname">
+                  </div>
+                  <div v-if="comment.merchantReplyContent" class="reply-box">
+                    <span class="reply-title">商家回复</span>
+                    <p>{{ comment.merchantReplyContent }}</p>
+                  </div>
+                </article>
+              </div>
+              <el-empty v-else description="暂无评价" :image-size="120" />
+            </div>
+          </el-tab-pane>
+
+          <el-tab-pane label="规格参数">
+            <div class="spec-panel">
+              <div class="spec-summary">
+                <div class="spec-summary-item"><span>店铺</span><strong>{{ itemData.shopName || '未绑定店铺' }}</strong></div>
+                <div class="spec-summary-item"><span>品牌</span><strong>{{ itemData.brand || '暂无' }}</strong></div>
+                <div class="spec-summary-item"><span>分类</span><strong>{{ itemData.category || '暂无' }}</strong></div>
+                <div class="spec-summary-item"><span>运费</span><strong>{{ itemData.shippingDesc || '未配置' }}</strong></div>
+              </div>
+
+              <el-table v-if="itemData.skuList?.length" :data="itemData.skuList" border>
+                <el-table-column label="规格">
+                  <template #default="{ row }">{{ formatSpecs(row.specs) }}</template>
+                </el-table-column>
+                <el-table-column label="价格" width="160">
+                  <template #default="{ row }">¥{{ formatPrice(row.price) }}</template>
+                </el-table-column>
+                <el-table-column label="库存" prop="stock" width="120" />
+              </el-table>
+            </div>
+          </el-tab-pane>
+
+          <el-tab-pane label="图文详情">
+            <div v-if="itemData.detailHtml" class="detail-html" v-html="itemData.detailHtml" />
+            <el-empty v-else description="暂无图文详情" :image-size="120" />
+          </el-tab-pane>
+        </el-tabs>
+      </section>
+    </div>
+  </div>
+</template>
+
 <style scoped lang="scss">
-$primary: #333;
-$accent: #409eff;
-$bg-body: #f7f8fa;
-$bg-card: #ffffff;
-$border: #ebeef5;
-
-.product-detail-page { background: $bg-body; min-height: 100vh; padding-bottom: 60px; color: #333; }
-.container { max-width: 1100px; margin: 0 auto; padding: 20px; }
-.breadcrumb-area { margin-bottom: 20px; }
-
-.main-card {
-  background: $bg-card; border-radius: 12px; padding: 30px; 
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 24px;
-  min-height: 400px;
+.detail-page {
+  min-height: calc(100vh - 120px);
+  background:
+    radial-gradient(circle at top left, rgba(249, 115, 22, 0.18), transparent 24%),
+    linear-gradient(180deg, #fffaf5 0%, #f4f7fb 45%, #f3f4f6 100%);
+  padding: 28px 0 40px;
 }
 
-.gallery-container {
-  .main-img-wrap {
-    width: 100%; height: 400px; background: #fbfbfb; border-radius: 8px; margin-bottom: 12px;
-    display: flex; align-items: center; justify-content: center; overflow: hidden;
-    .hero-image { width: 100%; height: 100%; }
+.detail-container {
+  width: min(1240px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.breadcrumb-row {
+  margin-bottom: 18px;
+}
+
+.hero-card,
+.detail-sections {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+}
+
+.hero-card {
+  display: grid;
+  grid-template-columns: minmax(320px, 520px) minmax(0, 1fr);
+  gap: 28px;
+  padding: 28px;
+}
+
+.gallery-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.main-image-wrap {
+  overflow: hidden;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #fff7ed 0%, #fef2f2 100%);
+  aspect-ratio: 1;
+}
+
+.main-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumb-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.thumb-btn {
+  width: 78px;
+  height: 78px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 18px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.thumb-btn.active {
+  border-color: #f97316;
+}
+
+.thumb-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.info-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.trust-top,
+.shop-line,
+.price-card,
+.action-row,
+.selector-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.shop-name {
+  color: #111827;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.self-tag,
+.shipping-chip,
+.base-tag,
+.stat-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.self-tag {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.shipping-chip {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.item-title {
+  margin: 0;
+  color: #111827;
+  font-size: 30px;
+  line-height: 1.4;
+}
+
+.item-subtitle {
+  margin: 0;
+  color: #6b7280;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.price-card {
+  padding: 20px 24px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #fff7ed 0%, #fff1f2 100%);
+}
+
+.price-main {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.currency,
+.amount {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.currency {
+  font-size: 22px;
+}
+
+.amount {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.original-price {
+  color: #9ca3af;
+  font-size: 15px;
+  text-decoration: line-through;
+}
+
+.price-side {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stat-pill {
+  background: rgba(255, 255, 255, 0.72);
+  color: #7c2d12;
+}
+
+.trust-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.trust-item {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 20px;
+  background: #fff;
+}
+
+.trust-icon {
+  color: #f97316;
+  font-size: 20px;
+}
+
+.trust-label {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.trust-value {
+  margin-top: 6px;
+  color: #111827;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.base-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.base-tag {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.selector-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.selector-label {
+  min-width: 56px;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.selector-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex: 1;
+}
+
+.selector-option {
+  min-width: 78px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 14px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.selector-option.active {
+  border-color: #f97316;
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.selector-option.disabled {
+  color: #9ca3af;
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.action-row {
+  justify-content: flex-start;
+}
+
+.detail-sections {
+  margin-top: 24px;
+  padding: 24px;
+}
+
+.review-list,
+.spec-panel {
+  padding-top: 8px;
+}
+
+.review-cards {
+  display: grid;
+  gap: 16px;
+}
+
+.review-card {
+  padding: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  background: #fff;
+}
+
+.review-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.review-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.nickname {
+  color: #111827;
+  font-weight: 600;
+}
+
+.time,
+.review-spec {
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.review-spec {
+  margin-top: 12px;
+}
+
+.review-content {
+  margin: 12px 0 0;
+  color: #374151;
+  line-height: 1.8;
+}
+
+.review-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.review-image {
+  width: 90px;
+  height: 90px;
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.reply-box {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #fff7ed;
+}
+
+.reply-title {
+  color: #c2410c;
+  font-weight: 600;
+}
+
+.reply-box p {
+  margin: 8px 0 0;
+  color: #7c2d12;
+  line-height: 1.7;
+}
+
+.spec-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.spec-summary-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #f9fafb;
+  color: #374151;
+}
+
+.spec-summary-item span {
+  color: #6b7280;
+}
+
+.detail-html {
+  color: #374151;
+  line-height: 1.9;
+}
+
+:deep(.detail-html img) {
+  max-width: 100%;
+  border-radius: 16px;
+}
+
+@media (max-width: 992px) {
+  .hero-card {
+    grid-template-columns: 1fr;
   }
-  .thumb-row {
-    display: flex; gap: 10px; justify-content: flex-start; overflow-x: auto; padding-bottom: 5px;
-    .thumb-box {
-      width: 60px; height: 60px; flex-shrink: 0;
-      border: 1px solid $border; border-radius: 6px; cursor: pointer; padding: 2px;
-      transition: all 0.2s;
-      &.active { border-color: $accent; border-width: 2px; }
-      img { width: 100%; height: 100%; object-fit: contain; }
-    }
+
+  .trust-grid,
+  .spec-summary {
+    grid-template-columns: 1fr;
   }
 }
 
-.info-container {
-  padding-left: 20px;
-  .prod-title { font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
-  .prod-desc { color: #999; font-size: 14px; margin-bottom: 15px; }
-
-  .price-box {
-    background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;
-    display: flex; align-items: flex-end;
-    .price-main { 
-      color: #e4393c; font-weight: bold; font-size: 28px; margin-right: 15px;
-      .currency { font-size: 16px; margin-right: 2px; }
-      .original-price { font-size: 14px; color: #999; text-decoration: line-through; margin-left: 8px; font-weight: normal; }
-    }
-    .tags-row { 
-      display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
-      .stock-text, .sold-text { font-size: 12px; color: #666; }
-    }
-  }
-
-  .sku-selector {
-    margin-bottom: 20px;
-    .sku-line {
-      margin-bottom: 15px;
-      .label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 14px; color: #606266; }
-      .options {
-        display: flex; flex-wrap: wrap; gap: 10px;
-        .option-pill {
-          padding: 6px 18px; 
-          border: 1px solid #dcdfe6; 
-          border-radius: 4px; 
-          cursor: pointer; 
-          font-size: 13px; 
-          color: #606266;
-          background: #fff;
-          transition: all 0.2s ease;
-          
-          &:hover:not(.disabled) { border-color: $accent; color: $accent; }
-          &.active { border-color: $accent; color: $accent; background: #ecf5ff; }
-          &.disabled { cursor: not-allowed; background-color: #f5f7fa; color: #c0c4cc; border-color: #ebeef5; }
-        }
-      }
-    }
-  }
-
-  .btn-group { 
-    margin-top: 30px;
-    display: flex; gap: 15px; 
-    .el-button { flex: 1; height: 45px; font-size: 16px; font-weight: bold;}
+@media (max-width: 768px) {
+  .price-card,
+  .trust-top,
+  .selector-row,
+  .review-head {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
-
-.details-card { background: #fff; padding: 20px; border-radius: 12px; min-height: 300px; }
-.detail-html-content { :deep(img) { max-width: 100%; height: auto; display: block; } }
-
-/* ★★★ 优化后的评论模块样式 ★★★ */
-.comments-container {
-  padding: 10px 20px;
-
-  /* 顶部统计区 */
-  .comments-header {
-    display: flex; justify-content: space-between; align-items: center;
-    padding-bottom: 20px; border-bottom: 1px solid #f0f0f0; margin-bottom: 20px;
-    
-    .header-left {
-      display: flex; align-items: center; gap: 16px;
-      .big-score { font-size: 48px; color: #333; font-weight: 600; line-height: 1; }
-      .score-meta {
-        display: flex; flex-direction: column; gap: 4px;
-        .meta-label { font-size: 12px; color: #999; }
-      }
-    }
-    .header-right {
-      .total-count { font-size: 14px; color: #666; background: #f5f7fa; padding: 6px 16px; border-radius: 20px; }
-    }
-  }
-
-  /* 评价列表项 */
-  .comment-item {
-    padding: 24px 0; 
-    border-bottom: 1px solid #f7f8fa;
-    &:last-child { border-bottom: none; }
-
-    /* 用户信息行 */
-    .user-row {
-      display: flex; align-items: center; margin-bottom: 12px;
-      .user-avatar { border: 1px solid #f0f0f0; margin-right: 12px; }
-      .user-info-col {
-        display: flex; flex-direction: column;
-        .nickname { font-size: 14px; font-weight: 600; color: #333; line-height: 1.4; }
-        .meta-row {
-          display: flex; align-items: center; font-size: 12px; color: #999;
-          .mini-rate { transform: scale(0.9); transform-origin: left center; margin-right: 4px; }
-          .separator { margin: 0 8px; color: #eee; }
-        }
-      }
-    }
-
-    /* 评价文本 */
-    .content-text { font-size: 15px; color: #333; line-height: 1.6; margin-bottom: 10px; white-space: pre-wrap; }
-
-    /* 图片列表 */
-    .review-images {
-      display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;
-      .review-img { 
-        width: 100px; height: 100px; border-radius: 8px; 
-        border: 1px solid #f0f0f0; cursor: zoom-in; 
-        transition: transform 0.2s;
-        &:hover { transform: scale(1.02); border-color: #ddd; }
-      }
-    }
-
-    /* ★★★ 商品信息 Footer (仿 UserCenter) ★★★ */
-    .card-footer-mini {
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px dashed #f5f7fa; /* 虚线分割 */
-      
-      .footer-product {
-        display: flex; 
-        align-items: center; 
-        font-size: 12px; 
-        color: #909399;
-        
-        .product-link {
-          margin-left: 5px;
-          margin-right: 5px;
-          color: #606266;
-          font-weight: 500;
-        }
-
-        /* SKU 标签样式 */
-        .sku-tag {
-          background-color: #f6f6f6;
-          border: none;
-          color: #666;
-          border-radius: 4px;
-          padding: 0 6px;
-          height: 20px;
-          line-height: 20px;
-          font-size: 11px;
-          margin-left: 8px;
-          transition: all 0.2s;
-        }
-        
-        /* 商品小图 */
-        .footer-item-img {
-          width: 40px;
-          height: 40px;
-          border-radius: 4px;
-          margin-left: 10px;
-          border: 1px solid #eee;
-          flex-shrink: 0;
-        }
-      }
-    }
-
-    /* 商家回复 (气泡风格) */
-    .merchant-reply {
-      background: #f7f8fa; padding: 12px 16px; border-radius: 8px; position: relative;
-      margin-top: 12px;
-      .reply-header {
-        display: flex; align-items: center; margin-bottom: 6px;
-        .shop-badge { 
-          background: #333; color: #fff; font-size: 10px; padding: 1px 4px; 
-          border-radius: 2px; margin-right: 6px; 
-        }
-        .reply-title { font-size: 13px; color: #666; font-weight: bold; }
-      }
-      .reply-content { font-size: 13px; color: #555; line-height: 1.5; }
-    }
-  }
-}
-
-@media (max-width: 768px) { .info-container { padding-left: 0; margin-top: 20px; } }
 </style>

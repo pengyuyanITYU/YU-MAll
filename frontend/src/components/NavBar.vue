@@ -1,281 +1,325 @@
 <template>
-  <header class="header-bar">
-    <div class="container header-content">
-      <!-- Logo -->
-      <div class="logo" @click="router.push('/')">
-        <span class="logo-icon">🛍️</span>
-        <span class="logo-text">YU-Mall</span>
+  <header class="site-header">
+    <div class="site-header__shell">
+      <div class="site-header__top">
+        <div class="top-links">
+          <button type="button" class="top-link" @click="router.push('/')">首页</button>
+          <button type="button" class="top-link" @click="goFavorites">收藏</button>
+          <button type="button" class="top-link" @click="goOrders">订单</button>
+          <button type="button" class="top-link" @click="goBrandHall">品牌馆</button>
+        </div>
+
+        <div class="top-links top-links--right">
+          <span class="top-greeting">{{ topGreeting }}</span>
+          <button v-if="!userInfo.isLoggedIn" type="button" class="top-link" @click="goLogin">
+            登录
+          </button>
+          <button v-if="!userInfo.isLoggedIn" type="button" class="top-link" @click="goRegister">
+            注册
+          </button>
+          <button type="button" class="top-link" @click="goDashboard">个人中心</button>
+        </div>
       </div>
 
-      <!-- 搜索栏 -->
-      <div class="search-area">
-        <el-input
-          v-model="keyword"
-          placeholder="搜索好物..."
-          class="search-input"
-          @keyup.enter="search"
-        >
-          <template #append>
-            <el-button :icon="Search" @click="search" />
-          </template>
-        </el-input>
-      </div>
+      <div class="site-header__main">
+        <button type="button" class="brand-block" @click="router.push('/')">
+          <span class="brand-badge">YU</span>
+          <span class="brand-copy">
+            <strong>YU-Mall</strong>
+            <small>先搜索，再逛会场，再下单</small>
+          </span>
+        </button>
 
-      <!-- 用户操作区 -->
-      <div class="user-actions">
-        <!-- 未登录状态 -->
-        <template v-if="!userInfo.isLoggedIn">
-          <el-button text @click="login">登录</el-button>
-          <el-button type="primary" round @click="register">注册</el-button>
-        </template>
-
-        <!-- 已登录状态 -->
-        <template v-else>
-          <!-- 1. 我的购物车 -->
-          <div class="action-item header-link-wrapper" @click="router.push('/cart')">
-            <el-badge :value="cartCount" :max="99" :hidden="cartCount === 0" class="custom-badge">
-              <span class="header-link">
-                <el-icon class="link-icon"><ShoppingCart /></el-icon>
-                我的购物车
-              </span>
-            </el-badge>
-          </div>
-
-          <!-- 2. ★★★ 新增：我的收藏 ★★★ -->
-          <div class="action-item header-link-wrapper" @click="router.push({ path: '/user', query: { tab: 'favorites' } })">
-            <span class="header-link">
-              <el-icon class="link-icon"><Star /></el-icon>
-              我的收藏
+        <div class="search-stack">
+          <div class="header-search">
+            <span class="search-leading">
+              <el-icon><Search /></el-icon>
             </span>
+            <input
+              v-model="keyword"
+              class="search-input"
+              type="text"
+              placeholder="搜索商品 / 品牌 / 店铺"
+              @keyup.enter="search"
+            >
+            <button type="button" class="search-submit" @click="search">搜索</button>
           </div>
-
-          <!-- 3. 我的订单 -->
-          <el-dropdown class="nav-dropdown header-link-wrapper" @command="handleCommand">
-            <span class="header-link">
-              我的订单
-              <el-icon class="el-icon--right"><ArrowDown /></el-icon>
-            </span>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="orders">全部订单</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-
-          <!-- 4. 头像/个人中心 -->
-          <el-dropdown class="nav-dropdown header-link-wrapper" @command="handleCommand">
-            <div class="avatar-wrapper">
-              <el-avatar :size="32" :src="userInfo.avatar" />
-              <span class="username">{{ userInfo.nickName }}</span>
-            </div>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="userCenter">
-                  <el-icon><User /></el-icon> 个人中心
-                </el-dropdown-item>
-                <el-dropdown-item divided command="logout">
-                  <el-icon><SwitchButton /></el-icon> 退出登录
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </template>
+        </div>
       </div>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import {
-  Search, ShoppingCart, ArrowDown, User, SwitchButton, Star // ★★★ 引入 Star 图标
-} from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { Search } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
-import { useUserStore }  from '@/stores/useUserStore'
-import { queryMyCarts } from '@/api/cart'
+import { useUserStore } from '@/stores/useUserStore'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
-// --- 状态定义 ---
 const keyword = ref('')
-const cartCount = ref(0)
 const { userInfo } = storeToRefs(userStore)
 
-// --- 购物车数量获取 ---
-const fetchCartCount = async () => {
+const topGreeting = computed(() => {
   if (!userInfo.value.isLoggedIn) {
-    cartCount.value = 0;
-    return;
+    return '欢迎来到 YU-Mall'
   }
-  try {
-    const res: any = await queryMyCarts();
-    if (res && res.data) {
-      cartCount.value = res.data.length;
-    } else {
-      cartCount.value = 0;
-    }
-  } catch (error) {
-    console.error("获取购物车数量失败", error);
-  }
-}
-
-// --- 命令处理 ---
-const handleCommand = (command: string) => {
-  switch (command) {
-    case 'orders':
-      router.push({ path: '/user', query: { tab: 'orders' } })
-      break
-    case 'userCenter':
-      router.push({ path: '/user', query: { tab: 'dashboard' } })
-      break
-    case 'logout':
-      handleLogout()
-      break
-  }
-}
-
-// --- 事件处理 ---
-const login = (): void => {
-  router.push({ name: 'Login' })
-}
-
-const register = (): void => {
-  router.push({ name: 'Register' })
-}
-
-const handleLogout = () => {
-  userStore.logout()
-  cartCount.value = 0
-  ElMessage.success('已退出登录')
-  router.push('/')
-}
-
-const search = () => {
-  if (!keyword.value || !keyword.value.trim()) return
-  router.push({ name: 'Search', query: { q: keyword.value } })
-}
-
-// --- 监听与生命周期 ---
-watch(() => route.fullPath, () => {
-  if (route.path === '/search') {
-    keyword.value = (route.query.q as string) || ''
-  } else {
-    keyword.value = ''
-  }
-  if (userInfo.value.isLoggedIn) {
-    fetchCartCount()
-  }
-}, { immediate: true })
-
-onMounted(() => {
-  fetchCartCount()
+  return `欢迎你，${userInfo.value.nickName || userInfo.value.username || 'YU 会员'}`
 })
 
-watch(() => userInfo.value.isLoggedIn, (newValue) => {
-  if (newValue) {
-    fetchCartCount();
-  } else {
-    cartCount.value = 0;
+const search = () => {
+  const searchKeyword = keyword.value.trim()
+  if (!searchKeyword) {
+    return
   }
-});
+  router.push({ name: 'Search', query: { q: searchKeyword } })
+}
 
+const goLogin = () => {
+  router.push('/login')
+}
+
+const goRegister = () => {
+  router.push('/register')
+}
+
+const goFavorites = () => {
+  if (!userInfo.value.isLoggedIn) {
+    goLogin()
+    return
+  }
+  router.push({ path: '/user', query: { tab: 'favorites' } })
+}
+
+const goOrders = () => {
+  if (!userInfo.value.isLoggedIn) {
+    goLogin()
+    return
+  }
+  router.push({ path: '/user', query: { tab: 'orders' } })
+}
+
+const goDashboard = () => {
+  if (!userInfo.value.isLoggedIn) {
+    goLogin()
+    return
+  }
+  router.push({ path: '/user', query: { tab: 'dashboard' } })
+}
+
+const goBrandHall = () => {
+  router.push({ name: 'Search', query: { q: '品牌馆' } })
+}
+
+watch(
+  () => route.fullPath,
+  () => {
+    keyword.value = route.path === '/search' ? String(route.query.q || '') : ''
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped lang="scss">
-$primary: #409eff;
-$text-main: #303133;
-
-.header-bar {
+.site-header {
   position: fixed;
-  top: 0; left: 0; right: 0; z-index: 1000;
-  height: 64px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-  display: flex; align-items: center;
-  transition: all 0.3s ease;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+  pointer-events: none;
 }
 
-.container {
-  max-width: 1280px; margin: 0 auto; padding: 0 16px; width: 100%;
+.site-header__shell {
+  width: min(1280px, 100%);
+  border: 1px solid #cddcf3;
+  border-top: none;
+  border-radius: 0 0 28px 28px;
+  background: rgba(243, 246, 253, 0.98);
+  box-shadow: 0 12px 32px rgba(18, 38, 77, 0.08);
+  overflow: hidden;
+  pointer-events: auto;
 }
 
-.header-content {
-  display: flex; align-items: center; justify-content: space-between;
+.site-header__top {
+  min-height: 36px;
+  padding: 0 24px;
+  border-bottom: 1px solid rgba(205, 220, 243, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.logo {
-  display: flex; align-items: center; cursor: pointer;
-  .logo-icon { margin-right: 8px; font-size: 26px; }
-  .logo-text {
-    font-size: 22px; font-weight: 900;
-    background: linear-gradient(45deg, #409eff, #36cfc9);
-    background-clip: text; -webkit-background-clip: text; color: transparent;
-    letter-spacing: -0.5px;
+.top-links {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.top-links--right {
+  justify-content: flex-end;
+}
+
+.top-link {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 13px;
+  color: #5872a7;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.top-link:hover,
+.top-link:focus-visible {
+  color: #2f60d2;
+}
+
+.top-greeting {
+  font-size: 13px;
+  color: #7b90ba;
+}
+
+.site-header__main {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  align-items: center;
+  gap: 28px;
+  padding: 18px 24px 20px;
+}
+
+.brand-block {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.brand-badge {
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #4a7cf0 0%, #2f60d2 100%);
+  color: #fff;
+  font-weight: 700;
+  font-size: 18px;
+  box-shadow: 0 10px 20px rgba(47, 96, 210, 0.22);
+}
+
+.brand-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.brand-copy strong {
+  font-size: 18px;
+  font-weight: 700;
+  color: #243b63;
+  line-height: 1;
+}
+
+.brand-copy small {
+  font-size: 12px;
+  color: #8196bf;
+}
+
+.search-stack {
+  min-width: 0;
+}
+
+.header-search {
+  height: 68px;
+  border-radius: 999px;
+  border: 2px solid rgba(113, 158, 250, 0.65);
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  padding: 0 10px 0 16px;
+  gap: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.search-leading {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #eef4ff;
+  color: #6f92d8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  color: #324a74;
+}
+
+.search-input::placeholder {
+  color: #97a8c9;
+}
+
+.search-submit {
+  border: none;
+  background: linear-gradient(135deg, #4d86f5 0%, #2f60d2 100%);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0 22px;
+  height: 40px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 12px 22px rgba(47, 96, 210, 0.24);
+}
+
+@media (max-width: 1080px) {
+  .site-header__main {
+    grid-template-columns: 1fr;
   }
 }
 
-.search-area {
-  width: 450px;
-  :deep(.el-input-group__append) {
-    background-color: $primary; border-color: $primary; color: #fff;
-    border-radius: 0 20px 20px 0; padding: 0 20px; transition: opacity 0.3s;
-    &:hover { opacity: 0.9; }
-  }
-  :deep(.el-input__wrapper) {
-    border-radius: 20px 0 0 20px; box-shadow: none;
-    background-color: rgba(255, 255, 255, 0.8);
-    border: 1px solid transparent; transition: all 0.3s;
-    &:hover, &.is-focus { background-color: #fff; box-shadow: 0 0 0 1px $primary inset; }
-  }
-}
-
-.user-actions {
-  display: flex; align-items: center; gap: 24px;
-
-  /* 通用头部链接样式 */
-  .header-link-wrapper {
-    display: flex; align-items: center; cursor: pointer;
-  }
-  .header-link {
-    display: flex; align-items: center; /* 确保图标和文字对齐 */
-    font-size: 14px; color: #333; font-weight: 500;
-    transition: color 0.3s;
-    &:hover { color: $primary; }
-    .link-icon { margin-right: 4px; font-size: 16px; }
-  }
-
-  /* 购物车角标样式 */
-  .custom-badge {
-    :deep(.el-badge__content) {
-      border: none;
-      transform: translateY(-2px) translateX(100%);
-      background-color: #f56c6c;
-    }
-  }
-
-  .nav-dropdown {
-    display: flex; align-items: center;
-  }
-
-  .avatar-wrapper {
-    display: flex; align-items: center; gap: 8px; cursor: pointer;
-    .user-avatar { border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.3s; }
-    &:hover .user-avatar { transform: scale(1.05); }
-    .username { font-size: 14px; font-weight: 500; color: $text-main; }
-  }
-}
-
-/* 移动端适配 */
 @media (max-width: 768px) {
-  .search-area { display: none; }
-  .header-bar { height: 60px; }
-  .logo-text { font-size: 18px; }
+  .site-header {
+    padding: 0 10px;
+  }
+
+  .site-header__top {
+    padding: 10px 16px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .site-header__main {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .header-search {
+    height: 56px;
+  }
 }
 </style>

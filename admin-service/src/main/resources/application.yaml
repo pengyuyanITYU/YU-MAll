@@ -2,16 +2,27 @@ server:
   port: 8084
 
 spring:
+  config:
+    import:
+      - optional:nacos:shared-jdbc.yaml?group=DEFAULT_GROUP&refreshEnabled=true
+      - optional:nacos:shared-log.yaml?group=DEFAULT_GROUP&refreshEnabled=true
+      - optional:nacos:shared-swagger.yaml?group=DEFAULT_GROUP&refreshEnabled=true
+      - optional:nacos:shared-seata.yaml?group=DEFAULT_GROUP&refreshEnabled=true
+      - optional:nacos:shared-sentinel.yaml?group=DEFAULT_GROUP&refreshEnabled=true
+      - optional:nacos:shared-feign.yaml?group=DEFAULT_GROUP&refreshEnabled=true
+      - optional:nacos:shared-mq.yaml?group=DEFAULT_GROUP&refreshEnabled=true
   application:
     name: yu-mall-admin-service
   cloud:
     nacos:
       server-addr: 192.168.100.128:8848
       config:
+        namespace: public
         import-check:
           enabled: false
       discovery:
         server-addr: 192.168.100.128:8848
+        namespace: public
   datasource:
     url: jdbc:mysql://${yu.db.host:192.168.100.128}:${yu.db.port:3307}/${yu.db.database}?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai&useSSL=false&rewriteBatchedStatements=true
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -50,7 +61,7 @@ seata:
     type: nacos
     nacos:
       server-addr: 192.168.100.128:8848
-      namespace: ""
+      namespace: public
       group: DEFAULT_GROUP
       application: seata-server
       username: nacos

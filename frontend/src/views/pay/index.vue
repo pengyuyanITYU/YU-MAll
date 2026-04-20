@@ -1,372 +1,553 @@
 <template>
-  <div class="pay-container">
-    <el-card class="pay-card" shadow="hover">
-      <template #header>
-        <div class="card-header">
-          <span>收银台</span>
+  <div class="pay-page">
+    <div class="pay-shell">
+      <section class="pay-hero">
+        <div class="hero-copy">
+          <el-tag effect="dark" type="success" round>订单待支付</el-tag>
+          <h1>请在当前页面完成订单支付</h1>
+          <p>支付成功后会自动同步订单状态，并跳转到订单详情页。</p>
         </div>
-      </template>
+        <div class="hero-amount">
+          <span>应付金额</span>
+          <strong>¥{{ amount.toFixed(2) }}</strong>
+          <em>订单号 {{ orderId }}</em>
+        </div>
+      </section>
 
-      <!-- 顶部：订单状态与金额 -->
-      <div class="order-info">
-        <el-result icon="success" title="订单提交成功" sub-title="请在 15 分钟内完成支付，否则订单将自动取消">
-          <template #extra>
-            <div class="amount-wrapper">
-              <span class="label">应付金额：</span>
-              <el-statistic :value="amount" :precision="2" prefix="¥" value-style="color: #f56c6c; font-weight: bold; font-size: 24px" />
+      <div class="pay-layout">
+        <el-card class="pay-main" shadow="never">
+          <template #header>
+            <div class="card-header">
+              <div>
+                <div class="card-title">支付方式</div>
+                <div class="card-subtitle">选择你希望使用的支付渠道</div>
+              </div>
+              <el-button link type="primary" @click="goToOrderDetail">查看订单</el-button>
             </div>
-            <div class="order-no">订单号：{{ orderId }}</div>
           </template>
-        </el-result>
-      </div>
 
-      <el-divider />
-
-      <!-- 中部：支付方式选择 -->
-      <div class="payment-section">
-        <h3 class="section-title">选择支付方式</h3>
-        
-        <el-radio-group v-model="form.paymentType" class="payment-methods">
-          <!-- 支付宝 -->
-          <div 
-            class="pay-item" 
-            :class="{ active: form.paymentType === 1 }"
-            @click="form.paymentType = 1"
-          >
-            <div class="icon alipay">支</div>
-            <div class="info">
-              <span class="name">支付宝</span>
-              <span class="desc">推荐支付宝用户使用</span>
-            </div>
-            <el-radio :label="1" class="radio-btn">
-              <span style="display:none"></span> <!-- 隐藏默认文字 -->
-            </el-radio>
-          </div>
-
-          <!-- 微信支付 -->
-          <div 
-            class="pay-item" 
-            :class="{ active: form.paymentType === 2 }"
-            @click="form.paymentType = 2"
-          >
-            <div class="icon wechat">微</div>
-            <div class="info">
-              <span class="name">微信支付</span>
-              <span class="desc">亿万用户的选择</span>
-            </div>
-            <el-radio :label="2" class="radio-btn">
-               <span style="display:none"></span>
-            </el-radio>
-          </div>
-
-          <!-- 余额支付 -->
-          <div 
-            class="pay-item" 
-            :class="{ active: form.paymentType === 3 }"
-            @click="form.paymentType = 3"
-          >
-            <div class="icon balance">余</div>
-            <div class="info">
-              <span class="name">余额支付</span>
-              <span class="desc">使用账户余额付款</span>
-            </div>
-            <el-radio :label="3" class="radio-btn">
-               <span style="display:none"></span>
-            </el-radio>
-          </div>
-        </el-radio-group>
-      </div>
-
-      <!-- 底部：密码输入与操作 -->
-      <div class="action-section">
-        <!-- 余额支付密码输入框 (带动画) -->
-        <transition name="el-zoom-in-top">
-          <div v-if="form.paymentType === 3" class="password-input">
-            <el-alert 
-              title="安全提醒：请输入您的6位支付密码" 
-              type="warning" 
-              :closable="false" 
-              show-icon 
-              style="margin-bottom: 15px;"
-            />
-            <el-form :model="form" @submit.prevent>
-              <el-form-item 
-                :error="passwordError"
-                label="支付密码"
+          <section class="section">
+            <div class="section-title">选择支付方式</div>
+            <el-radio-group v-model="form.paymentType" class="payment-list">
+              <label
+                v-for="item in paymentOptions"
+                :key="item.value"
+                class="payment-item"
+                :class="{ active: form.paymentType === item.value }"
               >
-                <el-input
-                  v-model="form.payPassword"
-                  type="password"
-                  show-password
-                  placeholder="请输入6位支付密码"
-                  maxlength="6"
-                  size="large"
-                  style="width: 100%"
-                >
-                  <template #prefix>
-                    <el-icon><Lock /></el-icon>
-                  </template>
-                </el-input>
-              </el-form-item>
-            </el-form>
-          </div>
-        </transition>
+                <div class="payment-main" @click="form.paymentType = item.value">
+                  <div class="payment-icon" :class="item.className">{{ item.shortName }}</div>
+                  <div class="payment-copy">
+                    <strong>{{ item.label }}</strong>
+                    <span>{{ item.desc }}</span>
+                  </div>
+                </div>
+                <el-radio :label="item.value">
+                  <span />
+                </el-radio>
+              </label>
+            </el-radio-group>
+          </section>
 
-        <div class="submit-btn-wrapper">
-          <el-button 
-            type="primary" 
-            size="large" 
-            :loading="loading" 
-            class="submit-btn"
-            @click="handlePay"
-          >
-            确认支付 ¥{{ amount.toFixed(2) }}
-          </el-button>
-        </div>
+          <section v-if="form.paymentType === 3" class="section">
+            <div class="section-title">支付密码</div>
+            <el-alert
+              title="余额支付需要输入 6 位支付密码。"
+              type="warning"
+              :closable="false"
+              show-icon
+              class="password-alert"
+            />
+            <el-input
+              v-model="form.payPassword"
+              type="password"
+              show-password
+              maxlength="6"
+              placeholder="请输入 6 位支付密码"
+            >
+              <template #prefix>
+                <el-icon><Lock /></el-icon>
+              </template>
+            </el-input>
+            <div v-if="passwordError" class="password-error">{{ passwordError }}</div>
+          </section>
+
+          <section v-if="confirmHint" class="section">
+            <el-alert :title="confirmHint" type="info" :closable="false" show-icon />
+          </section>
+        </el-card>
+
+        <aside class="pay-side">
+          <el-card class="summary-card" shadow="never">
+            <div class="side-title">支付概览</div>
+            <div class="summary-grid">
+              <div class="summary-row">
+                <span>订单号</span>
+                <strong>{{ orderId }}</strong>
+              </div>
+              <div class="summary-row">
+                <span>当前方式</span>
+                <strong>{{ selectedPaymentOption.label }}</strong>
+              </div>
+              <div class="summary-row total">
+                <span>应付金额</span>
+                <strong>¥{{ amount.toFixed(2) }}</strong>
+              </div>
+            </div>
+
+            <div class="side-tip">
+              {{ selectedPaymentOption.desc }}
+            </div>
+
+            <div class="action-row">
+              <el-button plain @click="goToOrderDetail">查看订单详情</el-button>
+              <el-button type="primary" :loading="submitting" @click="handlePay">
+                确认支付 ¥{{ amount.toFixed(2) }}
+              </el-button>
+            </div>
+          </el-card>
+        </aside>
       </div>
-
-    </el-card>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { ElMessage } from 'element-plus';
-import { Lock } from '@element-plus/icons-vue'; // 需安装 @element-plus/icons-vue
-import { payOrder, type PayOrderFormDTO } from '@/api/pay'; // 导入你提供的 API
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { Lock } from '@element-plus/icons-vue'
+import { getOrderDetail } from '@/api/order'
+import { payOrder, type PayOrderFormDTO } from '@/api/pay'
+import { isHandledRequestError } from '@/utils/request'
 
-// Hooks
-const route = useRoute();
-const router = useRouter();
+const route = useRoute()
+const router = useRouter()
 
-// 状态
-const loading = ref(false);
-const passwordError = ref('');
-const orderId = ref('');
-const amount = ref(0);
+const loading = ref(false)
+const confirming = ref(false)
+const passwordError = ref('')
+const confirmHint = ref('')
+const orderId = ref('')
+const amount = ref(0)
 
-// 表单数据
 const form = reactive<PayOrderFormDTO>({
   bizOrderNo: '',
   amount: 0,
-  paymentType: 1, // 默认支付宝
+  paymentType: 1,
   payPassword: ''
-});
+})
 
-// 初始化
-onMounted(() => {
-  // 从路由参数获取订单信息
-  // 示例 URL: /pay?orderId=123456&amount=88.50
-  const qOrderId = route.query.orderId as string;
-  const qAmount = route.query.amount;
+const paymentOptions = [
+  { value: 1, shortName: '支', label: '支付宝', desc: '推荐使用支付宝完成付款', className: 'alipay' },
+  { value: 2, shortName: '微', label: '微信支付', desc: '使用微信扫码或快捷支付', className: 'wechat' },
+  { value: 3, shortName: '余', label: '余额支付', desc: '使用账户余额完成付款', className: 'balance' }
+]
 
-  if (!qOrderId) {
-    ElMessage.error('订单参数错误');
-    // router.back(); // 实际项目中可能需要返回
-    return;
+const submitting = computed(() => loading.value || confirming.value)
+const selectedPaymentOption = computed(() => {
+  return paymentOptions.find(item => item.value === form.paymentType) || paymentOptions[0]
+})
+
+const parseOrderStatus = (value: unknown) => {
+  const status = Number(value)
+  return Number.isNaN(status) ? 0 : status
+}
+
+const isPaidStatus = (status: number) => [2, 3, 4, 5, 6].includes(status)
+
+const sleep = (ms: number) => new Promise((resolve) => {
+  window.setTimeout(resolve, ms)
+})
+
+const goToOrderDetail = () => {
+  if (!form.bizOrderNo) {
+    return
+  }
+  router.replace(`/order/${form.bizOrderNo}`)
+}
+
+const initForm = () => {
+  const rawOrderId = route.query.orderId
+  const rawAmount = route.query.amount
+  const parsedOrderId = typeof rawOrderId === 'string' ? rawOrderId : ''
+  const parsedAmount = Number(rawAmount)
+
+  if (!parsedOrderId) {
+    ElMessage.error('订单参数缺失')
+    router.replace('/user?tab=orders')
+    return
   }
 
-  orderId.value = qOrderId;
-  amount.value = Number(qAmount) || 0;
+  orderId.value = parsedOrderId
+  amount.value = Number.isFinite(parsedAmount) ? parsedAmount : 0
+  form.bizOrderNo = parsedOrderId
+  form.amount = Math.round(amount.value * 100)
+}
 
-  // 同步到 DTO
-  form.bizOrderNo = orderId.value;
-  form.amount = amount.value;
-});
+const waitForPaymentResult = async () => {
+  confirming.value = true
+  confirmHint.value = '正在确认支付结果，请稍候...'
 
-// 支付处理
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    try {
+      const res: any = await getOrderDetail(form.bizOrderNo)
+      const data = res?.data || res
+      const status = parseOrderStatus(data?.status)
+      if (isPaidStatus(status)) {
+        confirmHint.value = ''
+        router.replace(`/order/${form.bizOrderNo}`)
+        return
+      }
+    } catch (error) {
+      console.error('轮询订单状态失败', error)
+    }
+
+    if (attempt < 9) {
+      await sleep(1000)
+    }
+  }
+
+  confirmHint.value = '支付请求已提交，但订单状态仍在同步中。你可以直接进入订单详情页查看最新结果。'
+  ElMessage.warning('支付结果确认中，请稍后查看订单详情')
+  confirming.value = false
+}
+
 const handlePay = async () => {
-  passwordError.value = '';
+  passwordError.value = ''
 
-  // 1. 校验逻辑
+  if (!form.bizOrderNo) {
+    ElMessage.error('订单参数缺失')
+    return
+  }
+
   if (form.paymentType === 3) {
     if (!form.payPassword) {
-      passwordError.value = '请输入支付密码';
-      return;
+      passwordError.value = '请输入支付密码'
+      return
     }
-    if (form.payPassword.length < 6) {
-      passwordError.value = '密码长度不足6位';
-      return;
+    if (form.payPassword.length !== 6) {
+      passwordError.value = '支付密码必须为 6 位'
+      return
     }
   } else {
-    // 非余额支付清空密码
-    form.payPassword = '';
+    form.payPassword = ''
   }
 
-  // 2. 发送请求
-  loading.value = true;
+  loading.value = true
   try {
     await payOrder({
       bizOrderNo: form.bizOrderNo,
-      amount: form.amount * 100,
+      amount: form.amount,
       paymentType: form.paymentType,
       payPassword: form.payPassword
-    });
-
-    ElMessage.success('支付成功！');
-    
-    // 3. 支付成功跳转 (例如跳转到订单列表页)
-    router.replace(`/order/${form.bizOrderNo}`);
-
-  } catch (error: any) {
- 
-    ElMessage.error( '支付失败');
-    // 这里的错误提示通常由 request 拦截器处理，如果没有处理，可手动弹出
-    // ElMessage.error(error.message || '支付失败');
-  } finally {
-    loading.value = false;
+    })
+    ElMessage.success('支付请求已提交')
+  } catch (error) {
+    loading.value = false
+    if (!isHandledRequestError(error)) {
+      ElMessage.error('支付服务暂时不可用，请稍后再试')
+    }
+    return
   }
-};
+
+  loading.value = false
+  await waitForPaymentResult()
+}
+
+onMounted(() => {
+  initForm()
+})
 </script>
 
 <style scoped lang="scss">
-.pay-container {
-  min-height: 100vh;
-  background-color: #f0f2f5;
-  padding: 40px 20px;
-  display: flex;
-  justify-content: center;
+.pay-page {
+  min-height: calc(100vh - 64px);
+  padding: 96px 16px 88px;
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.12), transparent 28%),
+    radial-gradient(circle at right center, rgba(14, 165, 233, 0.10), transparent 22%),
+    linear-gradient(180deg, #f5f7fb 0%, #eef4fb 100%);
 }
 
-.pay-card {
+.pay-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.pay-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 28px 32px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+}
+
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hero-copy h1 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.2;
+  color: #111827;
+}
+
+.hero-copy p {
+  margin: 0;
+  color: #64748b;
+  font-size: 15px;
+}
+
+.hero-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 20px 24px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+}
+
+.hero-amount span,
+.hero-amount em {
+  color: #64748b;
+  font-style: normal;
+}
+
+.hero-amount strong {
+  color: #dc2626;
+  font-size: 40px;
+  line-height: 1;
+}
+
+.pay-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+  align-items: start;
+}
+
+.pay-main,
+.summary-card {
+  border: none;
+  border-radius: 24px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+}
+
+.pay-side {
+  position: sticky;
+  top: 96px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.card-title,
+.side-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.card-subtitle {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.section + .section {
+  margin-top: 28px;
+}
+
+.section-title {
+  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.payment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   width: 100%;
-  max-width: 800px;
-  border-radius: 8px;
-
-  :deep(.el-card__header) {
-    padding: 15px 20px;
-    font-weight: bold;
-    font-size: 16px;
-  }
 }
 
-.order-info {
+.payment-item {
   display: flex;
-  justify-content: center;
-  padding-bottom: 10px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
 
-  :deep(.el-result) {
-    padding-top: 0;
-    padding-bottom: 20px;
+.payment-item:hover {
+  transform: translateY(-1px);
+  border-color: #bfdbfe;
+}
+
+.payment-item.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.08);
+}
+
+.payment-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+}
+
+.payment-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.payment-icon.alipay {
+  background: #1677ff;
+}
+
+.payment-icon.wechat {
+  background: #07c160;
+}
+
+.payment-icon.balance {
+  background: #f59e0b;
+}
+
+.payment-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.payment-copy strong {
+  color: #111827;
+  font-size: 16px;
+}
+
+.payment-copy span {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.password-alert {
+  margin-bottom: 16px;
+}
+
+.password-error {
+  margin-top: 8px;
+  color: #dc2626;
+  font-size: 13px;
+}
+
+.summary-grid {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: #475569;
+}
+
+.summary-row strong {
+  color: #111827;
+}
+
+.summary-row.total {
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.summary-row.total strong {
+  color: #dc2626;
+  font-size: 32px;
+}
+
+.side-tip {
+  margin-top: 20px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.action-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.action-row :deep(.el-button) {
+  width: 100%;
+  height: 44px;
+}
+
+@media (max-width: 960px) {
+  .pay-page {
+    padding: 84px 12px 72px;
   }
 
-  .amount-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 10px;
-    
-    .label {
-      font-size: 16px;
-      color: #606266;
-      margin-right: 5px;
-    }
+  .pay-hero,
+  .pay-layout {
+    grid-template-columns: 1fr;
   }
 
-  .order-no {
-    margin-top: 8px;
-    color: #909399;
-    font-size: 14px;
+  .hero-amount {
+    align-items: flex-start;
+  }
+
+  .pay-side {
+    position: static;
   }
 }
 
-.payment-section {
-  padding: 10px 20px;
-
-  .section-title {
-    font-size: 16px;
-    margin-bottom: 20px;
-    color: #303133;
+@media (max-width: 640px) {
+  .pay-hero {
+    padding: 22px 20px;
   }
 
-  .payment-methods {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    width: 100%;
+  .hero-copy h1 {
+    font-size: 28px;
   }
 
-  .pay-item {
-    display: flex;
-    align-items: center;
-    padding: 15px 20px;
-    border: 1px solid #dcdfe6;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s;
-    position: relative;
-
-    &:hover {
-      border-color: #409eff;
-      background-color: #ecf5ff;
-    }
-
-    &.active {
-      border-color: #409eff;
-      background-color: #ecf5ff;
-      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-    }
-
-    .icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-weight: bold;
-      font-size: 20px;
-      margin-right: 15px;
-
-      &.alipay { background-color: #1677ff; }
-      &.wechat { background-color: #07c160; }
-      &.balance { background-color: #ff9900; }
-    }
-
-    .info {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-
-      .name {
-        font-weight: bold;
-        font-size: 16px;
-        color: #303133;
-      }
-      .desc {
-        font-size: 12px;
-        color: #909399;
-        margin-top: 4px;
-      }
-    }
-
-    .radio-btn {
-      margin-left: auto;
-    }
-  }
-}
-
-.action-section {
-  margin-top: 30px;
-  padding: 0 20px 20px;
-
-  .password-input {
-    max-width: 400px;
-    margin: 0 auto 20px;
+  .hero-amount strong {
+    font-size: 32px;
   }
 
-  .submit-btn-wrapper {
-    text-align: center;
-  }
-
-  .submit-btn {
-    width: 100%;
-    max-width: 400px;
-    height: 50px;
-    font-size: 18px;
-    font-weight: bold;
+  .payment-item {
+    align-items: flex-start;
   }
 }
 </style>

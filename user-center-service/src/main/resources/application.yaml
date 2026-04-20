@@ -10,10 +10,12 @@ spring:
     nacos:
       server-addr: 192.168.100.128:8848
       config:
+        namespace: public
         import-check:
           enabled: false
       discovery:
         server-addr: 192.168.100.128:8848
+        namespace: public
     sentinel:
       transport:
         dashboard: localhost:8090
@@ -71,7 +73,7 @@ seata:
     type: nacos
     nacos:
       server-addr: 192.168.100.128:8848
-      namespace: ""
+      namespace: public
       group: DEFAULT_GROUP
       application: seata-server
       username: nacos

@@ -71,6 +71,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
 import { getCollectList, deleteCollect } from '@/api/collect'
+import { isHandledRequestError } from '@/utils/request'
 // 假设你有加入购物车的API
 // import { addCart } from '@/api/cart' 
 
@@ -151,7 +152,9 @@ const confirmDelete = (ids: number[]) => {
       selectedIds.value = [] // 清空选中
       fetchData() // 刷新列表
     } catch (e) {
-      ElMessage.error('删除失败')
+      if (!isHandledRequestError(e)) {
+        ElMessage.error('收藏服务开小差了，请稍后再试')
+      }
     }
   })
 }
@@ -163,7 +166,9 @@ const addToCart = async (item: any) => {
     // await addCart({ itemId: item.itemId, num: 1, spec: item.spec })
     ElMessage.success('已加入购物车')
   } catch (e) {
-    ElMessage.error('加入购物车失败')
+    if (!isHandledRequestError(e)) {
+      ElMessage.error('加入购物车失败，请稍后重试')
+    }
   }
 }
 </script>

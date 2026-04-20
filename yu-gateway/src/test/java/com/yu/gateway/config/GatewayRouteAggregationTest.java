@@ -11,16 +11,23 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class GatewayRouteAggregationTest {
 
     @Test
+    void applicationYaml_shouldUseWebfluxGatewayRouteNamespace() throws IOException {
+        String yaml = readGatewayYaml();
+        assertTrue(yaml.contains("webflux:"));
+        assertTrue(yaml.contains("routes:"));
+    }
+
+    @Test
     void applicationYaml_shouldRouteUserDomainPathsToUserCenterService() throws IOException {
         String yaml = readGatewayYaml();
-        assertTrue(yaml.contains("uri: lb://yu-mall-user-center-service"));
+        assertTrue(yaml.contains("uri: ${yu.gateway.route.user-uri:lb://yu-mall-user-center-service}"));
     }
 
     @Test
     void applicationYaml_shouldRouteProductAndOrderDomainPathsToAggregatedServices() throws IOException {
         String yaml = readGatewayYaml();
-        assertTrue(yaml.contains("uri: lb://yu-mall-product-service"));
-        assertTrue(yaml.contains("uri: lb://yu-mall-order-service"));
+        assertTrue(yaml.contains("uri: ${yu.gateway.route.item-uri:lb://yu-mall-product-service}"));
+        assertTrue(yaml.contains("uri: ${yu.gateway.route.order-uri:lb://yu-mall-order-service}"));
     }
 
     @Test
@@ -32,14 +39,14 @@ class GatewayRouteAggregationTest {
     @Test
     void applicationYaml_shouldRouteAiPathsToAiService() throws IOException {
         String yaml = readGatewayYaml();
-        assertTrue(yaml.contains("uri: lb://yu-mall-ai-service"));
+        assertTrue(yaml.contains("uri: ${yu.gateway.route.ai-uri:lb://yu-mall-ai-service}"));
         assertTrue(yaml.contains("- Path=/ai/**"));
     }
 
     @Test
     void applicationYaml_shouldRouteAdminPathsToAdminServiceOnly() throws IOException {
         String yaml = readGatewayYaml();
-        assertTrue(yaml.contains("uri: lb://yu-mall-admin-service"));
+        assertTrue(yaml.contains("uri: ${yu.gateway.route.admin-uri:lb://yu-mall-admin-service}"));
         assertTrue(yaml.contains("- Path=/admin/**,/admins/**"));
         assertTrue(!yaml.contains("/admin/items/**"));
         assertTrue(!yaml.contains("/admin/categories/**"));
