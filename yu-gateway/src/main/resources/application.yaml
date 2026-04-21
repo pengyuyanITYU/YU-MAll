@@ -7,120 +7,20 @@ spring:
   cloud:
     nacos:
       server-addr: 192.168.100.128:8848
+      username: nacos
+      password: nacos
       config:
-        namespace: public
+        namespace: yu-mall
+        group: DEFAULT_GROUP
         import-check:
           enabled: false
       discovery:
         server-addr: 192.168.100.128:8848
-        namespace: public
-    gateway:
-      server:
-        webflux:
-          routes:
-            - id: item
-              uri: ${yu.gateway.route.item-uri:lb://yu-mall-product-service}
-              predicates:
-                - Path=/items/**,/shops/**,/search/**
-            - id: cart
-              uri: ${yu.gateway.route.cart-uri:lb://yu-mall-order-service}
-              predicates:
-                - Path=/carts/**
-            - id: user
-              uri: ${yu.gateway.route.user-uri:lb://yu-mall-user-center-service}
-              predicates:
-                - Path=/users/**,/upload/**
-            - id: order
-              uri: ${yu.gateway.route.order-uri:lb://yu-mall-order-service}
-              predicates:
-                - Path=/orders/**
-            - id: admin
-              uri: ${yu.gateway.route.admin-uri:lb://yu-mall-admin-service}
-              predicates:
-                - Path=/admin/**,/admins/**
-            - id: pay
-              uri: ${yu.gateway.route.pay-uri:lb://yu-mall-pay-service}
-              predicates:
-                - Path=/pay-orders/**
-            - id: search
-              uri: ${yu.gateway.route.search-uri:lb://yu-mall-search-service}
-              predicates:
-                - Path=/search/**
-            - id: address
-              uri: ${yu.gateway.route.address-uri:lb://yu-mall-user-center-service}
-              predicates:
-                - Path=/addresses/**
-            - id: member
-              uri: ${yu.gateway.route.member-uri:lb://yu-mall-user-center-service}
-              predicates:
-                - Path=/members/**
-            - id: collect
-              uri: ${yu.gateway.route.collect-uri:lb://yu-mall-product-service}
-              predicates:
-                - Path=/collects/**
-            - id: comment
-              uri: ${yu.gateway.route.comment-uri:lb://yu-mall-product-service}
-              predicates:
-                - Path=/comments/**
-            - id: ai
-              uri: ${yu.gateway.route.ai-uri:lb://yu-mall-ai-service}
-              predicates:
-                - Path=/ai/**
-knife4j:
-  enable: true
-  gateway:
-    enabled: true
-    enable-openapi: true
-    routes:
-      - name: User Service
-        service-name: user-center-service
-        path: /user/**
-        url: /v3/api-docs
-      - name: Order Service
-        service-name: order-service
-        path: /order/**
-        url: /v3/api-docs
-      - name: Admin Service
-        service-name: yu-mall-admin-service
-        path: /admin/**
-        url: /v3/api-docs
-seata:
-  registry:
-    type: nacos
-    nacos:
-      server-addr: 192.168.100.128:8848
-      namespace: public
-      group: DEFAULT_GROUP
-      application: seata-server
-      username: nacos
-      password: nacos
-  tx-service-group: mall
-  service:
-    vgroup-mapping:
-      mall: "default"
-  data-source-proxy-mode: AT
-
-logging:
-  level:
-    com.yu: debug
-  pattern:
-    dateformat: HH:mm:ss:SSS
-  file:
-    path: logs/${spring.application.name}
-
-yu:
-  jwt:
-    location: classpath:hmall.jks
-    password: hmall123
-    alias: hmall
-  auth:
-    excludePaths: # paths excluded from auth
-      - /search/**
-      - /users/login
-      - /items/**
-      - /shops/**
-      - /users/register
-      - /users/captcha/**
-      - /upload
-      - /comments/all/**
-      - /admins/**
+        namespace: yu-mall
+        group: DEFAULT_GROUP
+        fail-fast: false
+  config:
+    import:
+      - optional:nacos:shared-log.yaml?group=DEFAULT_GROUP&refreshEnabled=true
+      - optional:nacos:gateway-routes.json?group=DEFAULT_GROUP&refreshEnabled=true
+      - optional:nacos:gateway-service.yaml?group=DEFAULT_GROUP&refreshEnabled=true

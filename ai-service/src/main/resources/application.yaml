@@ -7,33 +7,19 @@ spring:
   cloud:
     nacos:
       server-addr: 192.168.100.128:8848
+      username: nacos
+      password: nacos
       config:
-        server-addr: 192.168.100.128:8848
-        namespace: public
+        namespace: yu-mall
+        group: DEFAULT_GROUP
         import-check:
           enabled: false
       discovery:
         server-addr: 192.168.100.128:8848
-        namespace: public
-  ai:
-    openai:
-      base-url: https://dashscope.aliyuncs.com/compatible-mode
-      api-key: ${ALI_API_KEY}
-      chat:
-        options:
-          model: qwen3.5-plus
-          temperature: 0.1
-
-#yu:
-#  ai:
-#    default-model: ${YU_AI_MODEL:gpt-4o-mini}
-#    default-temperature: ${YU_AI_TEMPERATURE:0.7}
-#    system-prompt: ${YU_AI_SYSTEM_PROMPT:You are a helpful assistant.}
-
-logging:
-  level:
-    com.yu: debug
-  pattern:
-    dateformat: HH:mm:ss:SSS
-  file:
-    path: logs/${spring.application.name}
+        namespace: yu-mall
+        group: DEFAULT_GROUP
+        fail-fast: false
+  config:
+    import:
+      - optional:nacos:shared-log.yaml?group=DEFAULT_GROUP&refreshEnabled=true
+      - optional:nacos:ai-service.yaml?group=DEFAULT_GROUP&refreshEnabled=true

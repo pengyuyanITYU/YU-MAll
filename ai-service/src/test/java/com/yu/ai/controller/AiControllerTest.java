@@ -14,7 +14,11 @@ import reactor.core.publisher.Flux;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-@WebFluxTest(AiController.class)
+@WebFluxTest(controllers = AiController.class, properties = {
+        "spring.cloud.nacos.config.enabled=false",
+        "spring.cloud.nacos.discovery.enabled=false",
+        "spring.config.import="
+})
 class AiControllerTest {
 
     @Autowired

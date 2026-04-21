@@ -8,7 +8,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.cloud.gateway.route.RouteDefinitionWriter;
 import reactor.core.publisher.Mono;
 
+import java.net.URI;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -29,6 +33,61 @@ class DynamicRouteLoaderTest {
         DynamicRouteLoader loader = new DynamicRouteLoader(writer, nacosConfigManager);
 
         assertDoesNotThrow(loader::registerRouteListenerWithRetry);
+    }
+
+    @Test
+    void parseRouteDefinitions_shouldSupportWrappedRoutesObject() {
+        String config = """
+                {
+                  "routes": [
+                    {
+                      "id": "user-service",
+                      "uri": "lb://yu-mall-user-center-service",
+                      "predicates": [
+                        {
+                          "name": "Path",
+                          "args": {
+                            "_genkey_0": "/users/**"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """;
+
+        List<org.springframework.cloud.gateway.route.RouteDefinition> routes =
+                DynamicRouteLoader.parseRouteDefinitions(config);
+
+        assertEquals(1, routes.size());
+        assertEquals("user-service", routes.getFirst().getId());
+        assertEquals(URI.create("lb://yu-mall-user-center-service"), routes.getFirst().getUri());
+        assertEquals("Path", routes.getFirst().getPredicates().getFirst().getName());
+    }
+
+    @Test
+    void parseRouteDefinitions_shouldSupportLegacyStringPredicateFormat() {
+        String config = """
+                {
+                  "routes": [
+                    {
+                      "id": "user-service",
+                      "uri": "lb://yu-mall-user-center-service",
+                      "predicates": ["Path=/users/**,/upload/**"],
+                      "filters": ["StripPrefix=1"]
+                    }
+                  ]
+                }
+                """;
+
+        List<org.springframework.cloud.gateway.route.RouteDefinition> routes =
+                DynamicRouteLoader.parseRouteDefinitions(config);
+
+        assertEquals(1, routes.size());
+        assertEquals("Path", routes.getFirst().getPredicates().getFirst().getName());
+        assertEquals("/users/**", routes.getFirst().getPredicates().getFirst().getArgs().get("_genkey_0"));
+        assertEquals("/upload/**", routes.getFirst().getPredicates().getFirst().getArgs().get("_genkey_1"));
+        assertEquals("StripPrefix", routes.getFirst().getFilters().getFirst().getName());
     }
 
     private static final class NoopRouteDefinitionWriter implements RouteDefinitionWriter {

@@ -1,0 +1,19 @@
+spring:
+  config:
+    import: ""
+  cloud:
+    nacos:
+      config:
+        enabled: false
+      discovery:
+        enabled: false
+  ai:
+    openai:
+      base-url: https://dashscope.aliyuncs.com/compatible-mode
+      api-key: test-api-key
+
+yu:
+  ai:
+    default-model: qwen-plus
+    system-prompt: You are a mall AI assistant.
+    default-temperature: 0.7

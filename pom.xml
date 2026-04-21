@@ -40,7 +40,7 @@
         <mybatis-plus.version>3.5.15</mybatis-plus.version>
         <hutool.version>5.8.11</hutool.version>
         <mysql.version>8.0.33</mysql.version>
-        <elasticsearch.version>7.12.1</elasticsearch.version>
+        <elasticsearch.version>8.12.0</elasticsearch.version>
         <knife4j.version>4.5.0</knife4j.version>
         <x-file-storage.version>2.3.0</x-file-storage.version>
         <aliyun.oss.version>3.16.1</aliyun.oss.version>

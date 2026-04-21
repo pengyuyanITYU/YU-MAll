@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: yu-mall-admin-service
+  datasource:
+    url: jdbc:mysql://192.168.100.128:3307/mall-sys?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai&useSSL=false&rewriteBatchedStatements=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: 123
+  cloud:
+    nacos:
+      server-addr: 192.168.100.128:8848
+      username: nacos
+      password: nacos
+      config:
+        namespace: yu-mall
+        group: DEFAULT_GROUP
+        file-extension: yaml
+        import-check:
+          enabled: false
+        extension-configs:
+          - data-id: shared-log.yaml
+            group: DEFAULT_GROUP
+            refresh: true
+          - data-id: shared-swagger.yaml
+            group: DEFAULT_GROUP
+            refresh: true
+          - data-id: shared-seata.yaml
+            group: DEFAULT_GROUP
+            refresh: true
+          - data-id: shared-sentinel.yaml
+            group: DEFAULT_GROUP
+            refresh: true
+          - data-id: shared-feign.yaml
+            group: DEFAULT_GROUP
+            refresh: true
+          - data-id: shared-mq.yaml
+            group: DEFAULT_GROUP
+            refresh: true
+          - data-id: admin-service.yaml
+            group: DEFAULT_GROUP
+            refresh: true
+      discovery:
+        enabled: false
+        group: DEFAULT_GROUP
+
+yu:
+  jwt:
+    location: classpath:hmall.jks
+    password: hmall123
+    alias: hmall

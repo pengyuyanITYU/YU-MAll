@@ -1,24 +1,20 @@
 package com.yu.ai.config;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 @Data
+@Validated
 @ConfigurationProperties(prefix = "yu.ai")
 public class YuAiProperties {
 
-    /**
-     * 默认模型
-     */
-    private String defaultModel = "qwen-plus";
+    @NotBlank
+    private String defaultModel;
 
-    /**
-     * 系统提示词
-     */
-    private String systemPrompt = "You are a helpful assistant.";
+    @NotBlank
+    private String systemPrompt;
 
-    /**
-     * 默认温度
-     */
     private Double defaultTemperature = 0.7D;
 }
