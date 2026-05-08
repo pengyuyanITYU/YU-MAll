@@ -10,7 +10,9 @@ import com.alibaba.nacos.api.exception.NacosException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.cloud.gateway.filter.FilterDefinition;
+import org.springframework.cloud.gateway.event.RefreshRoutesEvent;
 import org.springframework.cloud.gateway.handler.predicate.PredicateDefinition;
 import org.springframework.cloud.gateway.route.RouteDefinition;
 import org.springframework.cloud.gateway.route.RouteDefinitionWriter;
@@ -42,6 +44,7 @@ public class DynamicRouteLoader {
 
     private final RouteDefinitionWriter routeDefinitionWriter;
     private final NacosConfigManager nacosConfigManager;
+    private final ApplicationEventPublisher applicationEventPublisher;
     private final Set<String> routeIds = new HashSet<>();
     private final AtomicBoolean listenerRegistered = new AtomicBoolean(false);
 
@@ -91,19 +94,20 @@ public class DynamicRouteLoader {
         }
     }
 
-    private void updateConfig(String config) {
+    void updateConfig(String config) {
         List<RouteDefinition> routes = parseRouteDefinitions(config);
         for (String routeId : routeIds) {
-            routeDefinitionWriter.delete(Mono.just(routeId)).subscribe();
+            routeDefinitionWriter.delete(Mono.just(routeId)).block();
         }
         routeIds.clear();
-        if (CollUtil.isEmpty(routes)) {
-            return;
+        if (CollUtil.isNotEmpty(routes)) {
+            for (RouteDefinition routeDefinition : routes) {
+                routeDefinitionWriter.save(Mono.just(routeDefinition)).block();
+                routeIds.add(routeDefinition.getId());
+            }
         }
-        for (RouteDefinition routeDefinition : routes) {
-            routeDefinitionWriter.save(Mono.just(routeDefinition)).subscribe();
-            routeIds.add(routeDefinition.getId());
-        }
+        applicationEventPublisher.publishEvent(new RefreshRoutesEvent(this));
+        log.info("gateway dynamic routes refreshed, count={}", routeIds.size());
     }
 
     static List<RouteDefinition> parseRouteDefinitions(String config) {

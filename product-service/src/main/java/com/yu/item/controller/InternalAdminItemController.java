@@ -46,12 +46,12 @@ public class InternalAdminItemController {
 
     @DeleteMapping("/{id}")
     public AjaxResult<Void> delete(@PathVariable Long id) {
-        return AjaxResult.toAjax(itemService.removeById(id));
+        return AjaxResult.toAjax(itemService.deleteItemById(id));
     }
 
     @DeleteMapping
     public AjaxResult<Void> deleteByIds(@RequestParam("ids") List<Long> ids) {
-        return AjaxResult.toAjax(itemService.removeByIds(ids));
+        return AjaxResult.toAjax(itemService.deleteItemsByIds(ids));
     }
 
     @PostMapping

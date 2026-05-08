@@ -27,6 +27,8 @@ import java.util.List;
 @Slf4j
 public class MyGlobalFilter implements GlobalFilter, Ordered {
 
+    private static final List<String> BUILTIN_EXCLUDE_PATHS = List.of("/search/**");
+
     private final AuthProperties authProperties;
 
     private final JwtProperties jwtProperties;
@@ -67,6 +69,11 @@ public class MyGlobalFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isExcludePath(String path){
+        for (String exclude : BUILTIN_EXCLUDE_PATHS) {
+            if (antPathMatcher.match(exclude, path)) {
+                return true;
+            }
+        }
         List<String> excludePaths = authProperties.getExcludePaths();
         if (CollUtil.isEmpty(excludePaths)) {
             return false;

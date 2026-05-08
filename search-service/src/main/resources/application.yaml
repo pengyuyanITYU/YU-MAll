@@ -1,0 +1,36 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: yu-mall-search-service
+  elasticsearch:
+    uris: ${SEARCH_ELASTICSEARCH_URIS:http://192.168.100.128:9200}
+    connection-timeout: 5s
+    socket-timeout: 30s
+  cloud:
+    nacos:
+      server-addr: 192.168.100.128:8848
+      username: nacos
+      password: nacos
+      config:
+        namespace: yu-mall
+        group: DEFAULT_GROUP
+        import-check:
+          enabled: false
+      discovery:
+        server-addr: 192.168.100.128:8848
+        namespace: yu-mall
+        group: DEFAULT_GROUP
+        fail-fast: false
+  config:
+    import:
+      - optional:nacos:shared-log.yaml?group=DEFAULT_GROUP&refreshEnabled=true
+      - optional:nacos:shared-feign.yaml?group=DEFAULT_GROUP&refreshEnabled=true
+      - optional:nacos:shared-mq.yaml?group=DEFAULT_GROUP&refreshEnabled=true
+      - optional:nacos:search-service.yaml?group=DEFAULT_GROUP&refreshEnabled=true
+
+yu:
+  search:
+    index-name: mall_item_search
+    rebuild-page-size: 200

@@ -4,7 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ChatDotRound, Goods, ShoppingCart, Star } from '@element-plus/icons-vue'
 import { addItem2Cart } from '@/api/cart'
-import { list, type ItemListModel } from '@/api/item'
+import { searchItems, type SearchItemModel } from '@/api/search'
+import { applyProductImageFallback, resolveProductImage } from '@/utils/image'
 import { isHandledRequestError } from '@/utils/request'
 
 type SortMode = 'default' | 'sold' | 'rating' | 'priceAsc' | 'priceDesc'
@@ -15,7 +16,7 @@ const router = useRouter()
 const loading = ref(false)
 const total = ref(0)
 const sortMode = ref<SortMode>('default')
-const productList = ref<ItemListModel[]>([])
+const productList = ref<SearchItemModel[]>([])
 const state = reactive({
   pageNo: 1,
   pageSize: 20,
@@ -73,7 +74,7 @@ const formatPrice = (price?: number | string | null) => {
   return (Number(price) / 100).toFixed(2)
 }
 
-const getPositiveRateText = (item: ItemListModel) => {
+const getPositiveRateText = (item: SearchItemModel) => {
   if (!item.commentCount) {
     return '暂无评价'
   }
@@ -82,10 +83,10 @@ const getPositiveRateText = (item: ItemListModel) => {
 
 const buildSortParams = () => {
   if (sortMode.value === 'sold') {
-    return { sold: 'desc' }
+    return { sortBy: 'sold', isAsc: false }
   }
   if (sortMode.value === 'rating') {
-    return { sortBy: 'avg_score', isAsc: false }
+    return { sortBy: 'avgScore', isAsc: false }
   }
   if (sortMode.value === 'priceAsc') {
     return { sortBy: 'price', isAsc: true }
@@ -114,10 +115,10 @@ const fetchProducts = async (resetPage = false) => {
 
   loading.value = true
   try {
-    const res: any = await list({
+    const res: any = await searchItems({
       pageNo: state.pageNo,
       pageSize: state.pageSize,
-      name: keywordText.value || undefined,
+      keyword: keywordText.value || undefined,
       category: categoryText.value || undefined,
       minPrice,
       maxPrice,
@@ -155,7 +156,7 @@ const goToDetail = (id: number) => {
   router.push(`/item/${id}`)
 }
 
-const addToCart = async (item: ItemListModel) => {
+const addToCart = async (item: SearchItemModel) => {
   const token = localStorage.getItem('Authorization')
   if (!token) {
     ElMessage.warning('请先登录')
@@ -240,7 +241,12 @@ watch(
             @click="goToDetail(item.id)"
           >
             <div class="cover-wrap">
-              <img class="cover-image" :src="item.image || '/placeholder-image.svg'" :alt="item.name">
+              <img
+                class="cover-image"
+                :src="resolveProductImage(item.image)"
+                :alt="item.name"
+                @error="applyProductImageFallback"
+              >
             </div>
 
             <div class="card-body">

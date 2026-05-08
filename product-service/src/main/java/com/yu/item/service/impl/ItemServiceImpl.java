@@ -7,9 +7,11 @@ import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yu.api.dto.OrderDetailDTO;
+import com.yu.api.vo.SearchItemVO;
 import com.yu.comment.mapper.CommentMapper;
 import com.yu.common.constant.HttpStatus;
 import com.yu.common.domain.page.TableDataInfo;
+import com.yu.common.domain.query.PageQuery;
 import com.yu.common.exception.BusinessException;
 import com.yu.common.utils.BeanUtils;
 import com.yu.common.utils.CollUtils;
@@ -32,6 +34,7 @@ import com.yu.item.service.IItemDetailService;
 import com.yu.item.service.IItemService;
 import com.yu.item.service.IItemSkuService;
 import com.yu.item.service.IShopService;
+import com.yu.item.support.SearchSyncMessageProducer;
 import io.seata.spring.annotation.GlobalTransactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,6 +63,7 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
     private final IItemDetailService itemDetailService;
     private final IItemSkuService itemSkuService;
     private final IShopService shopService;
+    private final SearchSyncMessageProducer searchSyncMessageProducer;
 
     private ICategoryService categoryService;
 
@@ -86,7 +90,7 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
             }
             int sold = item.getSold() == null ? 0 : item.getSold();
             int stock = item.getStock() == null ? 0 : item.getStock();
-            int num = orderDetailDTO.getNum() != null ? orderDetailDTO.getNum() : 0;
+            int num = orderDetailDTO.getNum() == null ? 0 : orderDetailDTO.getNum();
             if (stock < num) {
                 log.warn("商品库存不足, itemId={}, 当前库存={}, 扣减数量={}", item.getId(), stock, num);
                 throw new BusinessException("商品库存不足: " + item.getName());
@@ -102,6 +106,7 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         if (!ok) {
             throw new BusinessException("更新库存失败");
         }
+        syncSearchItems(items.stream().map(Item::getId).collect(Collectors.toList()));
     }
 
     @Override
@@ -112,6 +117,20 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
     @Override
     public TableDataInfo listAdminItems(ItemPageQuery itemPageQuery) {
         return listItems(itemPageQuery, false);
+    }
+
+    @Override
+    public TableDataInfo listSearchItems(PageQuery query) {
+        PageQuery actual = query == null ? new PageQuery() : query;
+        Page<Item> page = actual.toMpPage("id", true);
+        Page<Item> result = itemMapper.selectPage(page, new LambdaQueryWrapper<Item>()
+                .eq(Item::getStatus, 1));
+        Map<Long, Shop> shopMap = buildShopMap(result.getRecords());
+        Map<Long, ItemCommentStatsVO> commentStatsMap = buildCommentStatsMap(result.getRecords());
+
+        return TableDataInfo.success(result.getRecords().stream()
+                .map(item -> buildSearchVO(item, shopMap.get(item.getShopId()), commentStatsMap.get(item.getId())))
+                .collect(Collectors.toList()), result.getTotal());
     }
 
     private TableDataInfo listItems(ItemPageQuery itemPageQuery, boolean onlyOnShelf) {
@@ -185,6 +204,7 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         if (CollUtils.isNotEmpty(skuList) && !itemSkuService.saveBatch(skuList)) {
             throw new BusinessException("商品SKU新增失败");
         }
+        syncSearchItem(item.getId());
     }
 
     @Override
@@ -222,6 +242,30 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         if (CollUtils.isNotEmpty(skuList) && !itemSkuService.saveBatch(skuList)) {
             throw new BusinessException("商品SKU更新失败");
         }
+        syncSearchItem(item.getId());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean deleteItemById(Long id) {
+        boolean removed = removeById(id);
+        if (removed) {
+            searchSyncMessageProducer.publishDelete(id);
+        }
+        return removed;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean deleteItemsByIds(List<Long> ids) {
+        if (CollUtils.isEmpty(ids)) {
+            return true;
+        }
+        boolean removed = removeByIds(ids);
+        if (removed) {
+            ids.stream().filter(Objects::nonNull).forEach(searchSyncMessageProducer::publishDelete);
+        }
+        return removed;
     }
 
     @Override
@@ -238,13 +282,23 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
     }
 
     @Override
+    public SearchItemVO getSearchItemById(Long id) {
+        Item item = itemMapper.selectById(id);
+        if (item == null || item.getStatus() == null || item.getStatus() != 1) {
+            return null;
+        }
+        Shop shop = item.getShopId() == null ? null : shopService.getById(item.getShopId());
+        ItemCommentStatsVO commentStats = buildCommentStatsMap(Collections.singletonList(item)).get(item.getId());
+        return buildSearchVO(item, shop, commentStats);
+    }
+
+    @Override
     public ItemDetailVO getItemBySkuId(Long skuId) {
         ItemSku sku = itemSkuMapper.selectById(skuId);
         if (sku == null) {
             return null;
         }
-        Long itemId = sku.getItemId();
-        return getItemById(itemId);
+        return getItemById(sku.getItemId());
     }
 
     @Override
@@ -359,7 +413,7 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         vo.setImage(item.getImage());
         vo.setStock(item.getStock());
         vo.setCategoryId(item.getCategoryId());
-        fillCommentStats(vo, item, commentStats);
+        fillCommentStats(vo, commentStats);
         fillShopFields(vo, item, shop);
         if (itemDetail != null) {
             vo.setBannerImages(parseStringList(itemDetail.getBannerImages()));
@@ -396,7 +450,26 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         vo.setStatus(item.getStatus());
         vo.setUpdateTime(item.getUpdateTime());
         vo.setCategory(item.getCategory());
-        fillCommentStats(vo, item, commentStats);
+        fillCommentStats(vo, commentStats);
+        fillShopFields(vo, item, shop);
+        return vo;
+    }
+
+    private SearchItemVO buildSearchVO(Item item, Shop shop, ItemCommentStatsVO commentStats) {
+        SearchItemVO vo = new SearchItemVO();
+        vo.setId(item.getId());
+        vo.setName(item.getName());
+        vo.setSubTitle(item.getSubTitle());
+        vo.setImage(item.getImage());
+        vo.setPrice(item.getPrice());
+        vo.setOriginalPrice(item.getOriginalPrice() == null ? null : Long.valueOf(item.getOriginalPrice()));
+        vo.setSold(item.getSold());
+        vo.setBrand(item.getBrand());
+        vo.setCategory(item.getCategory());
+        vo.setAvgScore(item.getAvgScore());
+        vo.setStatus(item.getStatus());
+        vo.setUpdateTime(item.getUpdateTime());
+        fillCommentStats(vo, commentStats);
         fillShopFields(vo, item, shop);
         return vo;
     }
@@ -465,7 +538,20 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         vo.setShippingDesc(buildShippingDesc(shop));
     }
 
-    private void fillCommentStats(ItemListVO vo, Item item, ItemCommentStatsVO commentStats) {
+    private void fillShopFields(SearchItemVO vo, Item item, Shop shop) {
+        vo.setShopId(item.getShopId());
+        if (shop == null) {
+            return;
+        }
+        vo.setShopName(shop.getName());
+        vo.setIsSelf(shop.getIsSelf());
+        vo.setShippingType(shop.getShippingType());
+        vo.setShippingFee(shop.getShippingFee());
+        vo.setFreeShippingThreshold(shop.getFreeShippingThreshold());
+        vo.setShippingDesc(buildShippingDesc(shop));
+    }
+
+    private void fillCommentStats(ItemListVO vo, ItemCommentStatsVO commentStats) {
         int approvedCount = commentStats != null && commentStats.getApprovedCount() != null
                 ? commentStats.getApprovedCount()
                 : 0;
@@ -473,7 +559,15 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         vo.setPositiveRate(toPositiveRate(commentStats));
     }
 
-    private void fillCommentStats(ItemDetailVO vo, Item item, ItemCommentStatsVO commentStats) {
+    private void fillCommentStats(ItemDetailVO vo, ItemCommentStatsVO commentStats) {
+        int approvedCount = commentStats != null && commentStats.getApprovedCount() != null
+                ? commentStats.getApprovedCount()
+                : 0;
+        vo.setCommentCount(approvedCount);
+        vo.setPositiveRate(toPositiveRate(commentStats));
+    }
+
+    private void fillCommentStats(SearchItemVO vo, ItemCommentStatsVO commentStats) {
         int approvedCount = commentStats != null && commentStats.getApprovedCount() != null
                 ? commentStats.getApprovedCount()
                 : 0;
@@ -532,5 +626,24 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
             return null;
         }
         return JSON.parseObject(json, Map.class);
+    }
+
+    private void syncSearchItem(Long itemId) {
+        SearchItemVO item = getSearchItemById(itemId);
+        if (item == null) {
+            searchSyncMessageProducer.publishDelete(itemId);
+            return;
+        }
+        searchSyncMessageProducer.publishUpsert(item);
+    }
+
+    private void syncSearchItems(List<Long> itemIds) {
+        if (CollUtils.isEmpty(itemIds)) {
+            return;
+        }
+        itemIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .forEach(this::syncSearchItem);
     }
 }

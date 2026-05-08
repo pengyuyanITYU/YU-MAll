@@ -13,6 +13,7 @@
         <module>admin-service</module>
         <module>user-center-service</module>
         <module>product-service</module>
+        <module>search-service</module>
         <module>order-service</module>
         <module>pay-service</module>
         <module>ai-service</module>

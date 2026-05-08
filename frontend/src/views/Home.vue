@@ -279,12 +279,18 @@
               <el-card class="product-card" shadow="hover" :body-style="{ padding: '0px' }">
                 <div class="image-container">
                   <el-image
-                    :src="item.image"
+                    :src="resolveProductImage(item.image)"
                     fit="cover"
                     loading="lazy"
                     class="prod-img"
                     @click="enterItemDetail(Number(item.id))"
-                  />
+                  >
+                    <template #error>
+                      <div class="prod-img prod-img--fallback">
+                        <img class="prod-img__fallback-image" src="/placeholder-image.svg" alt="商品占位图">
+                      </div>
+                    </template>
+                  </el-image>
                   <div class="action-overlay">
                     <div class="action-btn cart-btn" @click.stop="addToCart(item)">
                       <el-icon><ShoppingCart /></el-icon>
@@ -360,6 +366,8 @@ import { list, type ItemListModel } from '@/api/item'
 import { addItem2Cart } from '@/api/cart'
 import { addCollect, deleteById, getCollectList } from '@/api/collect'
 import { useUserStore } from '@/stores/useUserStore'
+import { resolveProductImage } from '@/utils/image'
+import { isHandledRequestError } from '@/utils/request'
 import heroTechVisual from '@/assets/home/hero-tech-visual.svg'
 import heroHomeVisual from '@/assets/home/hero-home-visual.svg'
 import channelHeadphones from '@/assets/home/channel-headphones.svg'
@@ -611,10 +619,14 @@ const handleShortcutClick = (shortcut: ShortcutKey) => {
   goBrandHall()
 }
 
+const resetFavoriteState = () => {
+  productList.value = productList.value.map((item) => ({ ...item, isFavorite: false, collectId: undefined }))
+}
+
 const updateFavoriteStatus = async () => {
   const token = localStorage.getItem('Authorization')
-  if (!token || !productList.value.length) {
-    productList.value = productList.value.map((item) => ({ ...item, isFavorite: false, collectId: undefined }))
+  if (!token || !isLoggedIn.value || !productList.value.length) {
+    resetFavoriteState()
     return
   }
 
@@ -646,6 +658,44 @@ const updateFavoriteStatus = async () => {
   }
 }
 
+const syncFavoriteStatus = async () => {
+  const token = localStorage.getItem('Authorization')
+  if (!token || !isLoggedIn.value || !productList.value.length) {
+    resetFavoriteState()
+    return
+  }
+
+  try {
+    const res: any = await getCollectList(undefined, {
+      errorMeta: {
+        silent: true
+      }
+    })
+    const collectList = Array.isArray(res?.data) ? res.data : []
+    const collectMap = new Map<number, any>()
+    collectList.forEach((collect: any) => {
+      const itemId = Number(collect?.itemId)
+      if (itemId) {
+        collectMap.set(itemId, collect)
+      }
+    })
+
+    productList.value = productList.value.map((item) => {
+      const collect = collectMap.get(Number(item.id))
+      return {
+        ...item,
+        isFavorite: Boolean(collect),
+        collectId: collect?.id || collect?.collectId
+      }
+    })
+  } catch (error) {
+    resetFavoriteState()
+    if (!isHandledRequestError(error)) {
+      console.warn('获取收藏状态失败', error)
+    }
+  }
+}
+
 const loadData = async () => {
   loading.value = true
   try {
@@ -663,7 +713,7 @@ const loadData = async () => {
 
     productList.value = Array.isArray(res?.rows) ? res.rows : []
     total.value = Number(res?.total || 0)
-    await updateFavoriteStatus()
+    await syncFavoriteStatus()
   } catch (error) {
     console.error('加载商品失败', error)
     productList.value = []
@@ -740,7 +790,7 @@ const toggleFavorite = async (item: HomeItem) => {
       tags: item.category || ''
     })
     item.isFavorite = true
-    await updateFavoriteStatus()
+    await syncFavoriteStatus()
     ElMessage.success('收藏成功')
   } catch (error) {
     console.error('收藏操作失败', error)
@@ -1705,6 +1755,19 @@ onMounted(() => {
 .prod-img {
   width: 100%;
   height: 100%;
+}
+
+.prod-img--fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f8f8;
+}
+
+.prod-img__fallback-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .action-overlay {

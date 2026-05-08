@@ -125,6 +125,7 @@ const handleAuthExpired = () => {
 
   isRelogging = true
   localStorage.removeItem('Authorization')
+  sessionStorage.removeItem('userInfo')
   showDedupedMessage('登录已过期，请重新登录')
 
   setTimeout(() => {
@@ -133,12 +134,12 @@ const handleAuthExpired = () => {
 }
 
 const notifyUserError = (error: UserRequestError, config: UserRequestConfig) => {
-  if (config.errorMeta?.silent) {
-    return
-  }
   error.handled = true
   if (error.authExpired) {
     handleAuthExpired()
+    return
+  }
+  if (config.errorMeta?.silent) {
     return
   }
   showDedupedMessage(error.userMessage)
